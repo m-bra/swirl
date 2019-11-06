@@ -217,72 +217,32 @@ impl RuleVariant {
     // match "match_" with the start of "input", possibly invoking other rules
     // "match_" is an unescaped string.
     // bind results of invocations to the specified variables
-    // return rest of input (that was not consumed) or MatchError and bind results
-    fn match_rule_head<'a>(input: &'a str, rule_head: &str, results: &mut HashMap<String, String>, rules: &Rules, backtrace: &mut Vec<String>)
-                -> Result<&'a str, MatchError> {
+    // advance input chars or MatchError and bind results
+    fn match_rule_head<'a>(input: &mut Chars, rule_head: &str, results: &mut HashMap<String, String>, rules: &Rules, backtrace: &mut Vec<String>)
+                -> MatchResult<String> {
 
-        fn to_invocation(capture: regex::Match) -> Invocation {
-            let second_colon = capture.as_str().rfind(RULE_INVOCATION_CHAR).unwrap();
-            // we have to search from the right, because the first char in the match is an arbitrary character before the invocation,
-            // which could also be a colon.
-            let first_colon = capture.as_str()[..second_colon].rfind(RULE_INVOCATION_CHAR).unwrap();
-            Invocation {
-                start: capture.start() + first_colon,
-                end: capture.end(),
-                binding_var: capture.as_str()[first_colon+1..second_colon].to_string(),
-                rule: capture.as_str()[second_colon+1..].to_string(),
-            }
-        };
+        let mut rule_head = rule_head.chars();
+        while !rule_head.as_str().is_empty() {
+            match match_invocation(&mut rule_head) {
+                Ok((var, rule)) => {
+                    let result = apply_named_rule(input, &rule, rules, backtrace)?;
 
-        lazy_static! {
-            // also matches with the character right before the invocation to check if its not ESCAPE_CHAR
-            static ref invocation_re: Regex = Regex::new(r"(?x)
-                :([a-zA-Z0-9_]*):([a-zA-Z0-9_]+)
-            ").unwrap();
-        }
-
-
-        // find first/next invocation in the match string
-        match invocation_re.find(rule_head).map(to_invocation) {
-            None => {
-                let pmatch = process_escapes(rule_head)
-                    .ok_or(MatchError::new("Internal error: Unescaped '.' followed by nothing", backtrace))?;
-                if input.starts_with(&pmatch) {
-                    Ok(&input[pmatch.len()..])
-                } else {
-                    let got = input.chars().take(pmatch.len()).collect::<String>();
-                    Err(MatchError::new(format!("Expected '{}', got '{}'", pmatch, got), backtrace))
-                }
-            },
-            Some(invocation) => {
-                // test if this is really an invocation / that the leading : was not escaped
-                let escaped = process_escapes(&rule_head[..invocation.start]).is_none();
-                if escaped {
-                    // match until escaped colon (at invocation.start inclusively)
-                    let pmatch = process_escapes(&rule_head[..invocation.start+1]).ok_or(MatchError::new("", backtrace))?;
-                    if input.starts_with(&pmatch) {
-                        Self::match_rule_head(&input[pmatch.len()..], &rule_head[invocation.start+1..], results, rules, backtrace)
-                    } else {
-                        Err(MatchError::new(format!("Expected '{}', got '{}'", pmatch, &input[..pmatch.len()]), backtrace))
-                    }
-                } else {
-                    // match text before invocation...
-                    let input = RuleVariant::match_rule_head(input, &rule_head[..invocation.start], results, rules, backtrace)?;
-                    assert_ne!(invocation.rule, "");
-                    // .. then invoke rule...
-                    let (input, result) = apply_named_rule(input, &invocation.rule, rules, backtrace)?;
-                    if !invocation.binding_var.is_empty() {
+                    if !var.is_empty() {
                         // TODO: could panic here
-                        assert!(!results.contains_key(&invocation.binding_var));
-                        results.insert(invocation.binding_var, result);
+                        assert!(!results.contains_key(&var.to_string()));
+                        results.insert(var.to_string(), result);
                     }
-
-                    // ... then match the rest recursively
-                    let input = RuleVariant::match_rule_head(input, &rule_head[invocation.end..], results, rules, backtrace)?;
-                    Ok(input)
                 }
-            }
+                Err(_) => {
+                    let (new_rule_head, c) = match_escapable_char(rule_head, ESCAPE_CHAR)?;
+                    rule_head = new_rule_head;
+                    let new_input = match_char(input, c)?;
+                    input = new_input;
+                }
+            };
         }
+
+        Ok(input)
     }
 
     fn test_replace_vars() {
@@ -296,10 +256,27 @@ impl RuleVariant {
             RuleVariant::replace_vars(":nonexistingvariable", &vars, &mut vec![]).is_err()
         )
     }
-
     /// replaces occurences of :var with the associated string
     /// taking into account escaped ".:", then processing escapes
-    fn replace_vars(text: &str, variables: &HashMap<String, String>, backtrace: &mut Vec<String>) -> Result<String, MatchError> {
+    fn replace_vars(text: &str, variables: &HashMap<String, String>) -> MatchResult<String> {
+        let mut result = String::with_capacity(text.len() * 2);
+        let mut text = text.chars();
+        while !text.is_empty() {
+            match match_var(&mut text) {
+                Err(_) => {
+                    let c = match_escapable_char(text, '.')?;
+                    result.push(c);
+                }
+                Ok(ident) => {
+                    
+                }
+            }
+
+        }
+    }
+
+
+    fn replace_vars_old(text: &str, variables: &HashMap<String, String>, backtrace: &mut Vec<String>) -> Result<String, MatchError> {
         lazy_static! {
             static ref use_var_re: Regex = Regex::new(r"(?x)
                 (  ) #1 in front, there has to be either a non-escape or beginning of text
