@@ -43,11 +43,11 @@
 }
 
 // process text that might contain generators (%!:) and execute the generators
-%: 1generable {:x:anychar} {:x}
-%: 1generable {:r:genRuleEndText} {:r}
+%: 1generable {:x:anychar}
+%: 1generable {:r:genRuleEndText}
 %: generable {}
-%: generable {:r:1generable:g:generable} {:r:g}
-%: {:g:generable} {:g}
+%: generable {:r:1generable:g:generable}
+%: {:g:generable}
 
 // function that escapes string
 %/: escape {escape }
@@ -56,4 +56,5 @@
 
 %!: escTestRule = end with ), escape .
 
-%: {:t:escTestRule} {success.: :t}testescape.))
+%: {:w:nwh:t:escTestRule} {:w.success.: :t}
+testescape.))

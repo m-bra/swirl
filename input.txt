@@ -103,6 +103,7 @@
 %: generable {:r:1generable:g:generable} {:r:g}
 %: {:g:generable} {:g}
 
+// infinite loop occurs at this chunk of text
 %!: apply anywhere genRuleEndText
 %!: apply anywhere genRuleMaybe
 %!: apply anywhere genRulePlus
@@ -122,5 +123,3 @@
 %: {:t:manynumbers} {success. .{:t.}}
 
 %: python
-
-    

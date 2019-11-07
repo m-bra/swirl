@@ -16,7 +16,7 @@ pub trait AssertEq: Sized {
     fn assert_eq(self, other: &Self) -> Self;
 }
 
-impl<T: PartialEq, Sized> AssertEq for T where T: std::fmt::Debug {
+impl<T: PartialEq> AssertEq for T where T: std::fmt::Debug {
     fn assert_eq(self, other: &Self) -> Self {
         assert_eq!(&self, other);
         self

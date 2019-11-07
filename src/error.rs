@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 #[derive(PartialEq, Eq, Debug)]
 pub struct MatchError {
     error_type: ErrorType,
@@ -54,6 +56,16 @@ impl MatchError {
             backtrace: vec![],
         }
     }
+
+    pub fn unknown_variable(var_ident: &str, input: &str) -> MatchError {
+        MatchError {
+            error_type: ErrorType::Generic {
+                msg: format!("Unknown variable '{}': {}", var_ident, error_region(input)),
+                subErrors: vec![],
+            },
+            backtrace: vec![],
+        }
+    }
 }
 
 use std::fmt;
@@ -88,11 +100,11 @@ impl SetBacktrace for MatchError {
 }
 
 impl<T> SetBacktrace for MatchResult<T> {
-    fn set_backtrace(mut self, bt: Vec<String>) -> MatchResult<T> {
+    fn set_backtrace(self, bt: Vec<String>) -> MatchResult<T> {
         self.map_err(|err| err.set_backtrace(bt))
     }
 
-    fn trace(mut self, tr: String) -> MatchResult<T> {
+    fn trace(self, tr: String) -> MatchResult<T> {
         self.map_err(|err| err.trace(tr))
     }
 }
