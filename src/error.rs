@@ -110,7 +110,7 @@ impl<T> SetBacktrace for MatchResult<T> {
 }
 
 // return until end of line (in simple quotes), or (if input is at end of line), return "end of line" without quotes
-fn error_region(input: &str) -> String {
+pub fn error_region(input: &str) -> String {
     let line = input.lines().next().unwrap_or("");
     if line.is_empty() {
         "end of line".to_string()

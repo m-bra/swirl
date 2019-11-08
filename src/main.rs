@@ -43,46 +43,23 @@ struct Rule {
 }
 
 impl Rule {
-    pub fn new_empty(name: String) -> Rule {
+    pub fn new(name: String) -> Rule {
         Rule {
             name: name,
             variants: Vec::new(),
         }
     }
+
+    pub fn variant(mut self, v: RuleVariant) -> Rule {
+        self.variants.push(v);
+        self
+    }
 }
 
 type Rules = HashMap<String, Rule>;
 
-
-#[test]
-fn test_process_escapes() {
-    // ESCAPE_CHAR == .
-    assert_eq!(_process_escapes(".{abc.d.e.}.."), Some("{abcde}.".to_string()));
-    assert_eq!(_process_escapes("aaaa..."), None);
-}
-
-/// none if string ends in non-escaped "."
-fn _process_escapes(text: &str) -> Option<String> {
-    let mut result = String::new();
-    let mut escape = false;
-    for c in text.chars() {
-        if escape {
-            result.push(c);
-            escape = false;
-        } else {
-            if c == ESCAPE_CHAR {
-                escape = true;
-            } else {
-                result.push(c);
-            }
-        }
-    }
-    if escape {
-        None
-    } else {
-        Some(result)
-    }
-}
+mod applicationsleft;
+use applicationsleft::*;
 
 #[test]
 fn test_find_first_definition() {
@@ -114,6 +91,16 @@ fn find_first_definition(grammar: &str) -> Option<((usize, usize), String, RuleV
             append:  capture.get(4).map(|x| (x.as_str().to_string())).unwrap_or("".to_string())
         })
     })
+}
+
+fn match_rule_definition<'a>(input: &'a Input, _: &()) -> MatchResult<(&'a Input, (String, RuleVariant))> {
+    let input = match_char(input, '%')?;
+    let input = match_char(input, ':')?;
+    let input = match_whitespaces(input)?;
+    let (input, ident) = match_ident(input)?;
+    let input = match_whitespaces(input)?;
+    let input = match_char(input, '{')?;
+    unimplemented!()
 }
 
 
@@ -323,11 +310,17 @@ fn apply_named_rule<'a>(input: &'a str, name: &str, rules: &Rules) -> Result<(&'
     return Err(MatchError::compose(format!("No variant of '{}' matched.", name), candidate_errors, &mut vec![]));
 }
 
-fn apply_unnamed_rules(input: &str, rules: &Rules) -> Result<String, MatchError> {
+fn apply_unnamed_rules(input: &str, rules: &Rules, appleft: &mut MaybeInf<u32>) -> Result<String, MatchError> {
     let mut input = input.to_string();
     for variant in rules.get("").map(|r| &r.variants).unwrap_or(&Vec::new()).iter().rev() {
         //backtrace.push(format!("%: {{{}}}", variant.match_.as_ref().unwrap_or(&"".to_string())));
         //let _f =  finally(|| {backtrace.pop();});
+
+        if *appleft == MaybeInf::Finite(0u32) {
+            break;
+        }
+
+        *appleft-= 1;
 
         let (unconsumed, replace) = variant.try_match(&input, rules, "")?;
         input = replace + unconsumed;
@@ -335,41 +328,51 @@ fn apply_unnamed_rules(input: &str, rules: &Rules) -> Result<String, MatchError>
     Ok(input)
 }
 
-fn process(input: &str, rules: &mut Rules) -> Result<String, MatchError> {
-    if let Some(((start, end), name, variant)) = find_first_definition(input) {
-        let name = || name.clone();
-        rules.entry(name()).or_insert(Rule::new_empty(name())).variants.push(variant);
-        let name = name();
-        // whether or not to remove rule definition from processed output
-        input[..end].to_string() + &{
-            if !name.is_empty() {
-                process(&input[end..], rules)?
-            } else {
-                process(apply_unnamed_rules(&input[end..], rules)?.as_ref(), rules)?
-            }
+fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Result<String, MatchError> {
+    let mut result = String::new();
+    let mut input = input.to_string();
+
+    while let Some(((_start, end), name, variant)) = find_first_definition(&input) {
+        if appleft == MaybeInf::Finite(0) {
+            break;
         }
-    } else {
-        input.to_string()
-    }.tap(Ok)
+
+        // add variant to definitions
+        let name = || name.clone();
+        rules.entry(name()).or_insert(Rule::new(name())).variants.push(variant);
+        let name = name();
+
+        // whether or not to remove rule definition from processed output ([..end] vs [..start])
+        result.push_str(&input[..end]);
+
+        if !name.is_empty() {
+            input = input[end..].to_string();
+        } else {
+            let new_input = apply_unnamed_rules(&input[end..], rules, &mut appleft)?;
+            input = new_input;
+        }
+        
+    }
+
+    result.push_str(&input);
+    Ok(result)
 }
 
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::fs::File;
+use std::error::Error;
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
 
     let mut buffer = String::new();
-    let stdin = io::stdin();
-    let mut _handle = stdin.lock();
+    //let stdin = io::stdin();
+    //let mut _handle = stdin.lock();
 
     File::open("input.txt")?.read_to_string(&mut buffer)?;
 
-    //buffer.push_str(r"");
+    let result = process(&buffer, &mut HashMap::new(), MaybeInf::Finite(1))?;
 
-    match process(&buffer, &mut HashMap::new()) {
-        Ok(result) => println!("{}", result),
-        Err(err) => eprint!("Error: {}", err)
-    }
+    File::open("input.txt")?.write(result.as_bytes())?;
 
     Ok(())
 }
@@ -380,7 +383,7 @@ fn test_input() {
         let mut buffer = String::new();
         File::open("testinput.txt")?.read_to_string(&mut buffer)?;
 
-        let result = process(&buffer, &mut HashMap::new())?;
+        let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite)?;
         let last_line = result.lines().last().unwrap();
         assert_eq!(last_line, "success: testescape.)");
 

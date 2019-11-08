@@ -101,3 +101,22 @@ pub fn match_escapable_char(input: &Input, escape: char) -> MatchResult<(&Input,
         (input.as_str(), c1)
     }.tap(Ok)
 }
+
+pub fn match_whitespace(input: &Input) -> MatchResult<&Input> {
+    let whitespace = &[' ', '\n', '\t'];
+    let mut errors = vec![];
+    for w in whitespace {
+        errors.push(match match_char(input, *w) {
+            Ok(input) => return Ok(input),
+            Err(err) => err,
+        });
+    }
+    MatchError::expected("whitespace", input).tap(Err)
+}
+
+pub fn match_whitespaces(mut input: &Input) -> MatchResult<&Input> {
+    while let Ok(new_input) = match_whitespace(input) {
+        input = new_input;
+    }
+    Ok(input)
+}
