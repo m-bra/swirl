@@ -36,10 +36,20 @@
 // %!: rules can have cooler syntax
 
 // generate rule that matches a string until `end` (if it has not been escaped with `esc`)
-// does escape matched string.
-// usage: %!: `ruleName` = end with `end`, escape with `esc`
+// does not escape matched string.
+// usage: %!: `ruleName` = end with `end`, escape `esc`
 // this generator uses the namespace `ruleName`_***
-%: genRuleEndText {%!.:::nwh:ruleName:ident::nwh.=::nwh.end::nwh.with::nwh:end:anychar::nwh.,::nwh.escape::nwh.with::nwh:esc:anychar} {
+%/: genRuleEndText {%!.:::nwh:ruleName:ident::nwh.=::nwh.end::nwh.with::nwh:end:anychar::nwh.,::nwh.escape::nwh:esc:anychar} {
+    %.: :ruleName {.:x.:anychar.:r.::ruleName.} {.:x.:r.}
+    %.: :ruleName {..:esc..:end.:r.::ruleName.} {..:esc..:end.:r.}
+    %.: :ruleName {..:end.} {.}
+}
+
+// generate rule that matches a string until `end` (if it has not been escaped with `esc`)
+// does escape matched string.
+// usage: %!: `ruleName` = any text, end with `end`, escape with `esc`
+// this generator uses the namespace `ruleName`_***
+%: genRuleEndText {%!.:::nwh:ruleName:ident::nwh.=::nwh.any::nwh.text::nwh.,::nwh.end::nwh.with::nwh:end:anychar::nwh.,::nwh.escape::nwh.with::nwh:esc:anychar} {
     %.: :ruleName {.:x.:anychar.:r.::ruleName.} {.:x.:r.}
     %.: :ruleName {..:esc.:c.:anychar.:r.::ruleName.} {.:c.:r.}
     %.: :ruleName {..:end.} {.}
@@ -73,21 +83,37 @@
     %: :ruleName {.:x.::innerRule.} {.:x.}
 }
 
-// process text that might contain generators (%!:) and execute the generators
-%: 1generable {:x:anychar} {:x}
-%: 1generable {:r:genRuleEndText} {:r}
-%: 1generable {:r:genRuleStar} {:r}
-%: 1generable {:r:genRulePlus} {:r}
-%: 1generable {:r:genRuleMaybe} {:r}
+// now activate the generators.
+// for that, we activate a single generator, which is used to activate other generators:
+//     %!: apply anywhere `genName`
+// which applies the given rule anywhere in the following text wherever it can match.
+// this generator uses the namespace `genName`_**
+%: genApply {%!.:::nwh.apply::nwh.anywhere::nwh:ruleName:ident} {
+    %.: :ruleName._1generable {.:x.:anychar.} {.:x.}
+    %.: :ruleName._1generable {.:r.::ruleName.} {.:r.}
+    %.: :ruleName._generable {.}
+    %.: :ruleName._generable {.:r.::ruleName._1generable.:g.::ruleName._generable.} {.:r.:g.}
+    %.: {.:g.::ruleName._generable.} {.:g.}
+}
+
+// %!: apply anywhere genApply
+%: 1generable {:x:anychar} 
+%: 1generable {:r:genApply}
 %: generable {}
-%: generable {:r:1generable:g:generable} {:r:g}
-%: {:g:generable} {:g}
+%: generable {:r:1generable:g:generable} 
+%: {:g:generable}
+
+// infinite loop occurs at this chunk of text
+%!: apply anywhere genRuleEndText
+%!: apply anywhere genRuleMaybe
+%!: apply anywhere genRulePlus
+%!: apply anywhere genRuleStar
 
 // function syntax: f(any text that does not contain unescaped .))
 // function input will be unescaped content between '(' and ')'
 // function call is replaced with function output
-%!: f_input = end with ), escape .
-%: f_escape {escape.(..:c:anychar:x:f_input} {:c}
+%/: f_input = any text, end with ), escape with .
+%/: f_escape {escape.(:x:f_input} {:c}
 
 %/: {.;::nwh:text:braced_esctext} {:text};
 
@@ -95,3 +121,5 @@
     
 
 %: {:t:manynumbers} {success. .{:t.}}
+
+%: python

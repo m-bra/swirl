@@ -89,6 +89,7 @@
 // which applies the given rule anywhere in the following text wherever it can match.
 // this generator uses the namespace `genName`_**
 %: genApply {%!.:::nwh.apply::nwh.anywhere::nwh:ruleName:ident} {
+    %/!.: apply anywhere :ruleName
     %.: :ruleName._1generable {.:x.:anychar.} {.:x.}
     %.: :ruleName._1generable {.:r.::ruleName.} {.:r.}
     %.: :ruleName._generable {.}
@@ -97,17 +98,45 @@
 }
 
 // %!: apply anywhere genApply
-%: 1generable {:x:anychar} {:x}
-%: 1generable {:r:genApply} {:r}
+%: 1generable {:x:anychar} 
+%: 1generable {:r:genApply}
 %: generable {}
-%: generable {:r:1generable:g:generable} {:r:g}
-%: {:g:generable} {:g}
+%: generable {:r:1generable:g:generable} 
+%: {:g:generable}
 
 // infinite loop occurs at this chunk of text
-%!: apply anywhere genRuleEndText
-%!: apply anywhere genRuleMaybe
-%!: apply anywhere genRulePlus
-%!: apply anywhere genRuleStar
+
+    %/!: apply anywhere genRuleEndText
+    %: genRuleEndText_1generable {:x:anychar} {:x}
+    %: genRuleEndText_1generable {:r:genRuleEndText} {:r}
+    %: genRuleEndText_generable {}
+    %: genRuleEndText_generable {:r:genRuleEndText_1generable:g:genRuleEndText_generable} {:r:g}
+    %: {:g:genRuleEndText_generable} {:g}
+
+
+    %/!: apply anywhere genRuleMaybe
+    %: genRuleMaybe_1generable {:x:anychar} {:x}
+    %: genRuleMaybe_1generable {:r:genRuleMaybe} {:r}
+    %: genRuleMaybe_generable {}
+    %: genRuleMaybe_generable {:r:genRuleMaybe_1generable:g:genRuleMaybe_generable} {:r:g}
+    %: {:g:genRuleMaybe_generable} {:g}
+
+
+    %/!: apply anywhere genRulePlus
+    %: genRulePlus_1generable {:x:anychar} {:x}
+    %: genRulePlus_1generable {:r:genRulePlus} {:r}
+    %: genRulePlus_generable {}
+    %: genRulePlus_generable {:r:genRulePlus_1generable:g:genRulePlus_generable} {:r:g}
+    %: {:g:genRulePlus_generable} {:g}
+
+
+    %/!: apply anywhere genRuleStar
+    %: genRuleStar_1generable {:x:anychar} {:x}
+    %: genRuleStar_1generable {:r:genRuleStar} {:r}
+    %: genRuleStar_generable {}
+    %: genRuleStar_generable {:r:genRuleStar_1generable:g:genRuleStar_generable} {:r:g}
+    %: {:g:genRuleStar_generable} {:g}
+
 
 // function syntax: f(any text that does not contain unescaped .))
 // function input will be unescaped content between '(' and ')'

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
 
 use regex::Regex;
 use std::collections::HashMap;
@@ -29,78 +31,74 @@ pub const RULE_INVOCATION_CHAR: char = ':';
 
 // todo: %: rule {:x:rule1 :y:rule2} should be {:x:y}
 
-#[derive(PartialEq, Eq, Debug)]
-struct RuleVariant {
-    match_: Option<String>,
-    replace: Option<String>,
-    append: String,
-}
-
-#[derive(PartialEq, Eq, Debug)]
-struct Rule {
-    name: String,
-    variants: Vec<RuleVariant>,
-}
-
-impl Rule {
-    pub fn new(name: String) -> Rule {
-        Rule {
-            name: name,
-            variants: Vec::new(),
-        }
-    }
-
-    pub fn variant(mut self, v: RuleVariant) -> Rule {
-        self.variants.push(v);
-        self
-    }
-}
-
-type Rules = HashMap<String, Rule>;
+mod ruletypes;
+use ruletypes::*;
 
 mod applicationsleft;
 use applicationsleft::*;
 
+
 #[test]
-fn test_find_first_definition() {
-    assert_eq!(
-        find_first_definition("0123%:  name1{...}}19"),
-
-        Some(((4, 19), "name1".to_string(), RuleVariant {
-            match_: Some("...}".to_string()),
-            replace: None,
-            append: "".to_string(),
-        }
-    )));
-}
-
-fn find_first_definition(grammar: &str) -> Option<((usize, usize), String, RuleVariant)> {
-    lazy_static! {
-    static ref RULE_RE: Regex = {
-        assert_eq!(ESCAPE_CHAR, '.'); // all regexes in lazy_static! use . as escape char
-        assert_eq!(RULE_INVOCATION_CHAR, ':'); // and : as rule invocation
-        Regex::new(r"%:(?:\s*([a-zA-Z0-9_]+))?(?:\s*\{((?:[^\.\}]|(?:\..))*)\}(?:\s*\{((?:[^\.\}]|(?:\..))*)\}(?:\s*\{((?:[^\.\}]|(?:\..))*)\})?)?)?").unwrap()
-        // https://regex101.com/r/Jlvyng/2
+fn test_match_rule_def() {
+    let header = || {
+        let mut header = Header::new();
+        header.add_char('.');
+        header.add_invoc(RuleInvocation("".into(), "rule".into()));
+        header.add_char('}');
+        header.seal()
     };
-}
-    RULE_RE.captures_iter(&grammar).next().map(|capture| {
-        let name = capture.get(1).map(|m| m.as_str()).unwrap_or("").to_string();
-        ((capture.get(0).unwrap().start(), capture.get(0).unwrap().end()), name, RuleVariant {
-            match_:  capture.get(2).map(|x| (x.as_str().to_string())),
-            replace: capture.get(3).map(|x| (x.as_str().to_string())),
-            append:  capture.get(4).map(|x| (x.as_str().to_string())).unwrap_or("".to_string())
-        })
-    })
+
+    let body = {
+        let mut body = Body::new();
+        body.add_invoc(VarInvocation ("var".into()));
+        body.add_char(':');
+        body.add_invoc(VarInvocation ("othervar".into()));
+        body.seal()
+    };
+
+    assert_eq!(
+        match_rule_definition("%:  name1{..::rule.}}19"),
+        Ok(("19", ("name1".into(), RuleVariant {
+            match_: header(),
+            replace: None,
+            append: "".into(),
+        })))
+    );
+
+    assert_eq!(
+        match_rule_definition("%:  name1{..::rule.}}    {:var.::othervar}19"),
+        Ok(("19", ("name1".into(), RuleVariant {
+            match_: header(),
+            replace: Some(body),//once told me
+            append: "".into(),
+        })))
+    );
 }
 
-fn match_rule_definition<'a>(input: &'a Input, _: &()) -> MatchResult<(&'a Input, (String, RuleVariant))> {
+fn match_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, (String, RuleVariant))> {
     let input = match_char(input, '%')?;
     let input = match_char(input, ':')?;
+    match_inner_rule_definition(input)
+}
+
+/// matches the parts of a rule after '%:' (so that caller might scan for '%:' instead of calling this function everytime)
+fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, (String, RuleVariant))> {
+    // ruleName
     let input = match_whitespaces(input)?;
-    let (input, ident) = match_ident(input)?;
+    let (input, rule_name) = match_ident(input).unwrap_or((input, ""));
+    let rule_name = rule_name.into();
     let input = match_whitespaces(input)?;
-    let input = match_char(input, '{')?;
-    unimplemented!()
+
+    // {header with :rule:invocation.s} {body with :var.s}
+    let header_start = input;
+    let (input, header) = match_rule_part(input, match_invocation)?;
+    let header = header.ok_or_else(|| MatchError::expected("Rule header", header_start))?;
+    let input = match_whitespaces(input)?;
+    let (input, body) = match_rule_part(input, match_var)?;
+    
+    Ok (
+        (input, (rule_name, RuleVariant {match_: header, replace: body, append: String::new()}))
+    )
 }
 
 
@@ -130,12 +128,12 @@ impl RuleVariant {
             name: "number".to_string(),
             variants: vec![
                 RuleVariant {
-                    match_: Some("0".to_string()),
+                    match_: Header::literally("0"),
                     replace: None,
                     append: "".to_string()
                 },
                 RuleVariant {
-                    match_: Some("1".to_string()),
+                    match_: Header::literally("1"),
                     replace: None,
                     append: "".to_string(),
                 }
@@ -145,28 +143,34 @@ impl RuleVariant {
         results.insert("n1".to_string(), "1".to_string());
         results.insert("n2".to_string(), "0".to_string());
         let anon_results = vec!["1".to_string()];
+
+        let (_, rule_head) = match_rule_part("{I have.::n1:number:n2:number.:apples......::number}", match_invocation).unwrap();
+        let rule_head = rule_head.unwrap();
+
         assert_eq!(
             Self::match_rule_head(
-                "I have:10:apples...1 and 2 bananas", "I have.::n1:number:n2:number.:apples......::number", &rules
+                "I have:10:apples...1 and 2 bananas", &rule_head, &rules
             ),
             Ok((" and 2 bananas", (results, anon_results)))
         );
     }
 
-    // match rule header with the start of "input", possibly invoking other rules, escaping the rule header
+    // match rule header with the start of "input", possibly invoking other rules
     // bind results of invocations to the specified variables (:var:rule)
     // bind results of anonymous invocations to vector in correct order (::rule)
     // return advanced input pointer or MatchError and bind results
-    fn match_rule_head<'a>(input: &'a Input, rule_head: &str, rules: &Rules)
+    fn match_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Rules)
                 -> MatchResult<(&'a Input, (HashMap<String, String>, Vec<String>))> {
         let mut results = HashMap::new();
         let mut anon_results = vec![];
         let mut input: &'a Input = input;
-        let mut rule_head = rule_head;
-        while !rule_head.is_empty() {
-            match match_invocation(rule_head, &()) {
-                Ok((rule_head, (var, rule))) => {
-                    let (input, result) = apply_named_rule(input, &rule, rules)?;
+
+        for (part, invocs) in rule_head.iter() {
+            input = match_str(input, part)?;
+
+            for &RuleInvocation(ref var, ref rule) in invocs {
+                input = {
+                    let (input, result) = apply_last(input, &rule, rules)?;
 
                     if !var.is_empty() {
                         // TODO: could panic here
@@ -176,15 +180,9 @@ impl RuleVariant {
                         anon_results.push(result);
                     }
 
-                    (input, rule_head)
-                }
-                Err(_) => {
-                    let (rule_head, c) = match_escapable_char(rule_head, ESCAPE_CHAR)?;
-                    let input = match_char(input, c)?;
-                    (input, rule_head)
-                }
+                    input
+                };
             }
-            .tap(|(new_input, new_rule_head)| {input = new_input; rule_head = new_rule_head;})
         }
 
         Ok((input, (results, anon_results)))
@@ -229,37 +227,49 @@ impl RuleVariant {
     /// replaces occurences of :var with the associated string
     /// taking into account escaped ".:", then processing escapes
     fn replace_vars(text: &str, variables: &HashMap<String, String>) -> MatchResult<String> {
-        Self::replace_matches(text, match_var, &(), |input, ident| variables.get(ident).ok_or(MatchError::unknown_variable(ident, input)))
+        Self::replace_matches(text, match_var_, &(), |input, VarInvocation(ident)| {
+            variables.get(&ident).ok_or(MatchError::unknown_variable(&ident, input))
+        })
     }
 
     /// try matching one rule variant and resolve the result text
     /// return the remaining unconsumed input and the replacement string
     fn try_match<'a>(&self, input: &'a str, rules: &Rules, _name: impl AsRef<str>) -> MatchResult<(&'a str, String)> {
-        //let btmatch = self.match_.as_ref().map(|s| format!(" {{{}}}", s)).unwrap_or("".to_string());    
+        let _btmatch = format!(" {{{}}}", self.match_);    
         //backtrace.push(format!("%: {} {} on '{}'", name.as_ref(), btmatch, firstline(input)));
+       // println!("%: {} {} on '{}'", _name.as_ref(), btmatch, _firstline(input));
 
         // TODO: view compiled assembly
         (|| {
-            let match_ = self.match_.as_ref()
-                    .ok_or(MatchError::new(format!("Variant has no header, can't match."), &mut vec![]))?;
+            let match_ = &self.match_;
 
-            let (input_after_match, (results, anon_results)) = RuleVariant::match_rule_head(input, match_, rules)?;
+            let (input_after_match, (results, anon_results)) = RuleVariant::match_rule_head(input, &match_, rules)?;
                 
             match &self.replace {
                 None => {
                     let mut anon_i = 0;
-                    // result is rule header with invocations replaced by their results
-                    (input_after_match, Self::replace_matches(match_, match_invocation, &(), |_, (var, rule)| {
-                        if !var.is_empty() {
-                            &results[var]
-                        } else {
-                            anon_i+= 1;
-                            &anon_results[anon_i - 1]
-                        }.tap(Ok)
-                    }).expect("MatchErrors should already have been thrown on earlier call on match_rule_head!??"))
+                    (input_after_match, self.match_.iter().fold(String::new(), |mut buf, (part, invocations)| {
+                        buf.push_str(part);
+                        for RuleInvocation(var, _) in invocations {
+                            if !var.is_empty() {
+                                buf.push_str(&results[var]);
+                            } else {
+                                buf.push_str(&anon_results[anon_i]);
+                                anon_i += 1;
+                            }
+                        }
+                        buf
+                    }))
                 }
                 Some(replace) => {
-                    (input_after_match, RuleVariant::replace_vars(&replace, &results)?)
+                    (input_after_match, replace.iter().fold(String::new(), |mut buf, (part, invocations)| {
+                        buf.push_str(part);
+                        for VarInvocation(var) in invocations {
+                            assert!(!var.is_empty());
+                            buf.push_str(&results[var]);
+                        }
+                        buf
+                    }))
                 }
             }.tap(Ok)
         })().tap(|result| {
@@ -271,34 +281,38 @@ impl RuleVariant {
 }
 
 #[test]
-fn test_apply_named_rule() {
+fn test_apply_last() {
     let mut rules = HashMap::new();
     rules.insert("digit".to_string(), Rule {
         name: "digit".to_string(),
         variants: vec![
             RuleVariant {
-                match_: Some(".0".to_string()), replace: None, append: "".to_string(),
+                match_: Header::literally("0"), replace: None, append: "".to_string(),
             },
             RuleVariant {
-                match_: Some("1".to_string()), replace: None, append: "".to_string(),
+                match_: Header::literally("1"), replace: None, append: "".to_string(),
             }
     ]});
     rules.insert("digits".to_string(), Rule {
         name: "digits".to_string(),
         variants: vec![
             RuleVariant {
-                match_: Some("::digit".to_string()), replace: None, append: "".to_string(),
+                match_: parse_header("::digit").unwrap(),
+                replace: None, 
+                append: "".to_string(),
             },
             RuleVariant {
-                match_: Some(":d:digit::digits".to_string()), replace: Some("Two .times: :d:d".to_string()), append: "".to_string(),
+                match_: parse_header(":d:digit::digits").unwrap(), 
+                replace: Some(parse_body("Two .times: :d:d").unwrap()), 
+                append: "".to_string(),
             },
     ]});
 
-    assert_eq!(apply_named_rule("01110d01", "digits", &rules), Ok(("d01", "Two times: 00".to_string())));
-    assert!(apply_named_rule("abcde", "digits", &rules).is_err());
+    assert_eq!(apply_last("01110d01", "digits", &rules), Ok(("d01", "Two times: 00".to_string())));
+    assert!(apply_last("abcde", "digits", &rules).is_err());
 }
 
-fn apply_named_rule<'a>(input: &'a str, name: &str, rules: &Rules) -> Result<(&'a str, String), MatchError> {
+fn apply_last<'a>(input: &'a str, name: &str, rules: &Rules) -> Result<(&'a str, String), MatchError> {
     let variants = &rules.get(name).ok_or(MatchError::new(format!("Rule '{}' does not exist.", name), &mut vec![]))?.variants;
     let mut candidate_errors = Vec::new();
     for v in variants.iter().rev() {
@@ -310,9 +324,9 @@ fn apply_named_rule<'a>(input: &'a str, name: &str, rules: &Rules) -> Result<(&'
     return Err(MatchError::compose(format!("No variant of '{}' matched.", name), candidate_errors, &mut vec![]));
 }
 
-fn apply_unnamed_rules(input: &str, rules: &Rules, appleft: &mut MaybeInf<u32>) -> Result<String, MatchError> {
+fn apply_sequence(input: &str, name: &str, rules: &Rules, appleft: &mut MaybeInf<u32>) -> Result<String, MatchError> {
     let mut input = input.to_string();
-    for variant in rules.get("").map(|r| &r.variants).unwrap_or(&Vec::new()).iter().rev() {
+    for variant in rules.get(name).map(|r| &r.variants).unwrap_or(&Vec::new()).iter().rev() {
         //backtrace.push(format!("%: {{{}}}", variant.match_.as_ref().unwrap_or(&"".to_string())));
         //let _f =  finally(|| {backtrace.pop();});
 
@@ -332,28 +346,37 @@ fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Result
     let mut result = String::new();
     let mut input = input.to_string();
 
-    while let Some(((_start, end), name, variant)) = find_first_definition(&input) {
+    while let Some(start) = input.find("%:") {
         if appleft == MaybeInf::Finite(0) {
             break;
         }
+
+        let (after_def, (name, variant)) = match_rule_definition(&input[start..])?;
+        let def_length = input[start..].len() - after_def.len();
+        let end = start + def_length;
 
         // add variant to definitions
         let name = || name.clone();
         rules.entry(name()).or_insert(Rule::new(name())).variants.push(variant);
         let name = name();
 
+        // all text until the current rule definition remains untouched (because it is between the beginning/a rule definition and a rule definition)
+        // so just push it to the result string
         // whether or not to remove rule definition from processed output ([..end] vs [..start])
         result.push_str(&input[..end]);
 
         if !name.is_empty() {
+            // next portion to process is after the current rule definition
             input = input[end..].to_string();
         } else {
-            let new_input = apply_unnamed_rules(&input[end..], rules, &mut appleft)?;
+            // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
+            let new_input = apply_sequence(&input[end..], name, rules, &mut appleft)?;
             input = new_input;
         }
         
     }
 
+    // the rest of the input contains no more rule definitions, so push it to the results
     result.push_str(&input);
     Ok(result)
 }
@@ -365,14 +388,41 @@ use std::error::Error;
 fn main() -> Result<(), Box<dyn Error>> {
 
     let mut buffer = String::new();
-    //let stdin = io::stdin();
-    //let mut _handle = stdin.lock();
+    let stdin = io::stdin();
 
-    File::open("input.txt")?.read_to_string(&mut buffer)?;
+    let mut target = "input.txt".to_string();
+    let mut userline = String::new();
 
-    let result = process(&buffer, &mut HashMap::new(), MaybeInf::Finite(1))?;
+    print!(" $ ");
+    io::stdout().flush()?;
 
-    File::open("input.txt")?.write(result.as_bytes())?;
+    while stdin.read_line(&mut userline).is_ok() {
+        {
+            let userline: Vec<&str> = userline.split(" ").map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+            if userline.len() == 0 {continue;}
+
+            if userline[0] == "quit" {
+                break;
+            } else if userline[0] == "target" {
+                target = userline.get(1).map(|s| s.to_string()).unwrap_or_else(|| {
+                    println!("No target given.");
+                    target
+                });
+            } else if userline[0] == "s" || userline[0] == "step" {
+                File::open(&target)?.read_to_string(&mut buffer)?;
+                let step_count: &str = userline.get(1).unwrap_or(&"1");
+                let step_count: u32 = step_count.parse().unwrap();
+                let result = process(&buffer, &mut HashMap::new(), MaybeInf::Finite(step_count))?;
+                File::create(&target)?.write(result.as_bytes())?;
+            } else {
+                println!("unknown command '{}'", userline[0]);
+            }
+        }
+
+        print!(" $ ");
+        io::stdout().flush()?;
+        userline.clear();
+    }
 
     Ok(())
 }
