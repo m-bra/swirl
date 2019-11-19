@@ -1,4 +1,15 @@
 
+pub fn _firstline<'a>(string: &str) -> &str {
+    string.split("\n").next().unwrap_or("")
+}
+
+pub fn firstline<'a>(string: &str) -> &str {
+    _firstline(string)
+}
+
+mod tap;
+pub use tap::*;
+
 use std::ops::*;
 use std::cmp::*;
 

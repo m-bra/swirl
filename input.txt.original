@@ -121,5 +121,3 @@
     
 
 %: {:t:manynumbers} {success. .{:t.}}
-
-%: python

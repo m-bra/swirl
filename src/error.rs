@@ -1,34 +1,34 @@
 #![allow(non_snake_case)]
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct MatchError {
     error_type: ErrorType,
     backtrace: Vec<String>
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub enum ErrorType {
     Generic {msg: String, subErrors: Vec<MatchError>},
 }
 
 impl MatchError {
-    pub fn new(msg: impl AsRef<str>, bt: &Vec<String>) -> MatchError {
+    pub fn new(msg: impl AsRef<str>) -> MatchError {
         MatchError { 
             error_type: ErrorType::Generic {
                 msg: msg.as_ref().to_string(),
                 subErrors: vec![]
             },
-            backtrace: bt.clone()
+            backtrace: vec![]
         }
     }
     
-    pub fn compose(msg: impl AsRef<str>, subErrors: Vec<MatchError>, bt: &Vec<String>) -> MatchError {
+    pub fn compose(msg: impl AsRef<str>, subErrors: Vec<MatchError>) -> MatchError {
         MatchError { 
             error_type: ErrorType::Generic {
                 msg: msg.as_ref().to_string(),
                 subErrors: subErrors,
             },
-            backtrace: bt.clone()
+            backtrace: vec![]
         }
     }
 
@@ -61,6 +61,16 @@ impl MatchError {
         MatchError {
             error_type: ErrorType::Generic {
                 msg: format!("Unknown variable '{}': {}", var_ident, error_region(input)),
+                subErrors: vec![],
+            },
+            backtrace: vec![],
+        }
+    }
+
+    pub fn unknown_rule(rule_ident: &str, input: &str) -> MatchError {
+        MatchError {
+            error_type: ErrorType::Generic {
+                msg: format!("Unknown rule: '{}': {}", rule_ident, error_region(input)),
                 subErrors: vec![],
             },
             backtrace: vec![],

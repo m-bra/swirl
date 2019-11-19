@@ -4,18 +4,17 @@
 use regex::Regex;
 use std::collections::HashMap;
 
-mod tap;
-use tap::*;
-
 mod util;
-#[allow(unused_imports)]
 use util::*;
-
-#[macro_use]
-extern crate lazy_static;
 
 mod error;
 use error::*;
+
+mod mmatch;
+use mmatch::*;
+
+#[macro_use]
+extern crate lazy_static;
 
 pub const ESCAPE_CHAR: char = '.';
 pub const RULE_INVOCATION_CHAR: char = ':';
@@ -29,14 +28,8 @@ pub const RULE_INVOCATION_CHAR: char = ':';
 
 // todo: remove unescaped whitespace
 
-// todo: %: rule {:x:rule1 :y:rule2} should be {:x:y}
-
-mod ruletypes;
-use ruletypes::*;
-
-mod applicationsleft;
-use applicationsleft::*;
-
+mod types;
+use types::*;
 
 #[test]
 fn test_match_rule_def() {
@@ -59,8 +52,8 @@ fn test_match_rule_def() {
     assert_eq!(
         match_rule_definition("%:  name1{..::rule.}}19"),
         Ok(("19", ("name1".into(), RuleVariant {
-            match_: header(),
-            replace: None,
+            header: header(),
+            body: None,
             append: "".into(),
         })))
     );
@@ -68,21 +61,21 @@ fn test_match_rule_def() {
     assert_eq!(
         match_rule_definition("%:  name1{..::rule.}}    {:var.::othervar}19"),
         Ok(("19", ("name1".into(), RuleVariant {
-            match_: header(),
-            replace: Some(body),//once told me
+            header: header(),
+            body: Some(body),//once told me
             append: "".into(),
         })))
     );
 }
 
-fn match_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, (String, RuleVariant))> {
+pub fn match_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, (String, RuleVariant))> {
     let input = match_char(input, '%')?;
     let input = match_char(input, ':')?;
     match_inner_rule_definition(input)
 }
 
 /// matches the parts of a rule after '%:' (so that caller might scan for '%:' instead of calling this function everytime)
-fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, (String, RuleVariant))> {
+pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, (String, RuleVariant))> {
     // ruleName
     let input = match_whitespaces(input)?;
     let (input, rule_name) = match_ident(input).unwrap_or((input, ""));
@@ -97,10 +90,55 @@ fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, 
     let (input, body) = match_rule_part(input, match_var)?;
     
     Ok (
-        (input, (rule_name, RuleVariant {match_: header, replace: body, append: String::new()}))
+        (input, (rule_name, RuleVariant {header: header, body: body, append: String::new()}))
     )
 }
 
+
+#[test]
+fn _test_replace_vars() {
+    let mut vars = HashMap::new();
+    vars.insert("v1".to_string(), ".!".to_string());
+    vars.insert("v2".to_string(), "not used".to_string());
+    assert_eq!(
+        replace_vars(":v1.:..:v1", &vars), Ok(".!:..!".to_string()),
+    );
+    assert!(
+        replace_vars(":nonexistingvariable", &vars).is_err()
+    )
+}
+
+/// processes and escapes `escape_text`, replacing occurences of `match_fn` with its output piped into the `replace` function
+/// yes we are processing escapes here, because that needs to be coupled with searching matches
+/// so that occurences can always be escaped and 'hidden' from this function
+/// errors in `match_fn` will be treated as "cant match; ignore", while errors in `replace` will be returned by this function
+pub fn replace_matches<'a, 'b, In, Out, AR>(escape_text: &'a str, mut match_fn: impl MatchFn<'a, &'b In, Out>, param: &'b In, 
+        mut replace: impl FnMut(&str, Out) -> MatchResult<AR>) -> MatchResult<String> where AR: AsRef<str> {
+    let mut text = escape_text;
+    let mut result = String::with_capacity(text.len() * 2);
+    while !text.is_empty() {
+        text = match match_fn(text, param) {
+            Err(_) => {
+                let (text, c) = match_escapable_char(text, '.')?;
+                result.push(c);
+                text
+            }
+            Ok((text, out)) => {
+                result.push_str(replace(text, out)?.as_ref());
+                text
+            }
+        }
+    }
+    Ok(result)
+}
+
+/// replaces occurences of :var with the associated string
+/// taking into account escaped ".:", then processing escapes
+pub fn replace_vars(text: &str, variables: &HashMap<String, String>) -> MatchResult<String> {
+    replace_matches(text, match_var_, &(), |input, VarInvocation(ident)| {
+        variables.get(&ident).ok_or(MatchError::unknown_variable(&ident, input))
+    })
+}
 
 #[test]
 fn test() {
@@ -109,240 +147,40 @@ fn test() {
 }
 
 #[test]
-fn test_match_rule_head() {
-    RuleVariant::_test_match_rule_head();
-}
-
-#[test]
-fn test_replace_vars() {
-    RuleVariant::_test_replace_vars();
-}
-
-mod mmatch;
-use mmatch::*;
-
-impl RuleVariant {
-    fn _test_match_rule_head() {
-        let mut rules = HashMap::new();
-        rules.insert("number".to_string(), Rule {
-            name: "number".to_string(),
-            variants: vec![
-                RuleVariant {
-                    match_: Header::literally("0"),
-                    replace: None,
-                    append: "".to_string()
-                },
-                RuleVariant {
-                    match_: Header::literally("1"),
-                    replace: None,
-                    append: "".to_string(),
-                }
-            ]
-        });
-        let mut results = HashMap::new();
-        results.insert("n1".to_string(), "1".to_string());
-        results.insert("n2".to_string(), "0".to_string());
-        let anon_results = vec!["1".to_string()];
-
-        let (_, rule_head) = match_rule_part("{I have.::n1:number:n2:number.:apples......::number}", match_invocation).unwrap();
-        let rule_head = rule_head.unwrap();
-
-        assert_eq!(
-            Self::match_rule_head(
-                "I have:10:apples...1 and 2 bananas", &rule_head, &rules
-            ),
-            Ok((" and 2 bananas", (results, anon_results)))
-        );
-    }
-
-    // match rule header with the start of "input", possibly invoking other rules
-    // bind results of invocations to the specified variables (:var:rule)
-    // bind results of anonymous invocations to vector in correct order (::rule)
-    // return advanced input pointer or MatchError and bind results
-    fn match_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Rules)
-                -> MatchResult<(&'a Input, (HashMap<String, String>, Vec<String>))> {
-        let mut results = HashMap::new();
-        let mut anon_results = vec![];
-        let mut input: &'a Input = input;
-
-        for (part, invocs) in rule_head.iter() {
-            input = match_str(input, part)?;
-
-            for &RuleInvocation(ref var, ref rule) in invocs {
-                input = {
-                    let (input, result) = apply_last(input, &rule, rules)?;
-
-                    if !var.is_empty() {
-                        // TODO: could panic here
-                        assert!(!results.contains_key(&var.to_string()));
-                        results.insert(var.to_string(), result);
-                    } else {
-                        anon_results.push(result);
-                    }
-
-                    input
-                };
-            }
-        }
-
-        Ok((input, (results, anon_results)))
-    }
-
-    fn _test_replace_vars() {
-        let mut vars = HashMap::new();
-        vars.insert("v1".to_string(), ".!".to_string());
-        vars.insert("v2".to_string(), "not used".to_string());
-        assert_eq!(
-            RuleVariant::replace_vars(":v1.:..:v1", &vars), Ok(".!:..!".to_string()),
-        );
-        assert!(
-            RuleVariant::replace_vars(":nonexistingvariable", &vars).is_err()
-        )
-    }
-
-    /// processes and escapes `escape_text`, replacing occurences of `match_fn` with its output piped into the `replace` function
-    /// yes we are processing escapes here, because that needs to be coupled with searching matches
-    /// so that occurences can always be escaped and 'hidden' from this function
-    /// errors in `match_fn` will be treated as "cant match; ignore", while errors in `replace` will be returned by this function
-    fn replace_matches<'a, 'b, In, Out, AR>(escape_text: &'a str, mut match_fn: impl MatchFn<'a, &'b In, Out>, param: &'b In, 
-            mut replace: impl FnMut(&str, Out) -> MatchResult<AR>) -> MatchResult<String> where AR: AsRef<str> {
-        let mut text = escape_text;
-        let mut result = String::with_capacity(text.len() * 2);
-        while !text.is_empty() {
-            text = match match_fn(text, param) {
-                Err(_) => {
-                    let (text, c) = match_escapable_char(text, '.')?;
-                    result.push(c);
-                    text
-                }
-                Ok((text, out)) => {
-                    result.push_str(replace(text, out)?.as_ref());
-                    text
-                }
-            }
-        }
-        Ok(result)
-    }
-
-    /// replaces occurences of :var with the associated string
-    /// taking into account escaped ".:", then processing escapes
-    fn replace_vars(text: &str, variables: &HashMap<String, String>) -> MatchResult<String> {
-        Self::replace_matches(text, match_var_, &(), |input, VarInvocation(ident)| {
-            variables.get(&ident).ok_or(MatchError::unknown_variable(&ident, input))
-        })
-    }
-
-    /// try matching one rule variant and resolve the result text
-    /// return the remaining unconsumed input and the replacement string
-    fn try_match<'a>(&self, input: &'a str, rules: &Rules, _name: impl AsRef<str>) -> MatchResult<(&'a str, String)> {
-        let _btmatch = format!(" {{{}}}", self.match_);    
-        //backtrace.push(format!("%: {} {} on '{}'", name.as_ref(), btmatch, firstline(input)));
-       // println!("%: {} {} on '{}'", _name.as_ref(), btmatch, _firstline(input));
-
-        // TODO: view compiled assembly
-        (|| {
-            let match_ = &self.match_;
-
-            let (input_after_match, (results, anon_results)) = RuleVariant::match_rule_head(input, &match_, rules)?;
-                
-            match &self.replace {
-                None => {
-                    let mut anon_i = 0;
-                    (input_after_match, self.match_.iter().fold(String::new(), |mut buf, (part, invocations)| {
-                        buf.push_str(part);
-                        for RuleInvocation(var, _) in invocations {
-                            if !var.is_empty() {
-                                buf.push_str(&results[var]);
-                            } else {
-                                buf.push_str(&anon_results[anon_i]);
-                                anon_i += 1;
-                            }
-                        }
-                        buf
-                    }))
-                }
-                Some(replace) => {
-                    (input_after_match, replace.iter().fold(String::new(), |mut buf, (part, invocations)| {
-                        buf.push_str(part);
-                        for VarInvocation(var) in invocations {
-                            assert!(!var.is_empty());
-                            buf.push_str(&results[var]);
-                        }
-                        buf
-                    }))
-                }
-            }.tap(Ok)
-        })().tap(|result| {
-            //backtrace.pop();
-            result
-        })
-        
-    }
-}
-
-#[test]
 fn test_apply_last() {
     let mut rules = HashMap::new();
-    rules.insert("digit".to_string(), Rule {
+    let ruleDigit = Rule {
         name: "digit".to_string(),
         variants: vec![
             RuleVariant {
-                match_: Header::literally("0"), replace: None, append: "".to_string(),
+                header: Header::literally("0"), body: None, append: "".to_string(),
             },
             RuleVariant {
-                match_: Header::literally("1"), replace: None, append: "".to_string(),
+                header: Header::literally("1"), body: None, append: "".to_string(),
             }
-    ]});
-    rules.insert("digits".to_string(), Rule {
+    ]};
+    let ruleDigits = Rule {
         name: "digits".to_string(),
         variants: vec![
             RuleVariant {
-                match_: parse_header("::digit").unwrap(),
-                replace: None, 
+                header: parse_header("::digit").unwrap(),
+                body: None, 
                 append: "".to_string(),
             },
             RuleVariant {
-                match_: parse_header(":d:digit::digits").unwrap(), 
-                replace: Some(parse_body("Two .times: :d:d").unwrap()), 
+                header: parse_header(":d:digit::digits").unwrap(), 
+                body: Some(parse_body("Two .times: :d:d").unwrap()), 
                 append: "".to_string(),
             },
-    ]});
+    ]};
+    rules.insert("digit".to_string(), ruleDigit.clone());
+    rules.insert("digits".to_string(), ruleDigits.clone());
 
-    assert_eq!(apply_last("01110d01", "digits", &rules), Ok(("d01", "Two times: 00".to_string())));
-    assert!(apply_last("abcde", "digits", &rules).is_err());
+    assert_eq!(ruleDigits.apply_last("01110d01", &rules), Ok(("d01", "Two times: 00".to_string())));
+    assert!(ruleDigits.apply_last("abcde", &rules).is_err());
 }
 
-fn apply_last<'a>(input: &'a str, name: &str, rules: &Rules) -> Result<(&'a str, String), MatchError> {
-    let variants = &rules.get(name).ok_or(MatchError::new(format!("Rule '{}' does not exist.", name), &mut vec![]))?.variants;
-    let mut candidate_errors = Vec::new();
-    for v in variants.iter().rev() {
-        match v.try_match(input, rules, name) {
-            Ok((input, result)) => return Ok((input, result)),
-            Err(err) => candidate_errors.push(err),
-        }
-    }
-    return Err(MatchError::compose(format!("No variant of '{}' matched.", name), candidate_errors, &mut vec![]));
-}
-
-fn apply_sequence(input: &str, name: &str, rules: &Rules, appleft: &mut MaybeInf<u32>) -> Result<String, MatchError> {
-    let mut input = input.to_string();
-    for variant in rules.get(name).map(|r| &r.variants).unwrap_or(&Vec::new()).iter().rev() {
-        //backtrace.push(format!("%: {{{}}}", variant.match_.as_ref().unwrap_or(&"".to_string())));
-        //let _f =  finally(|| {backtrace.pop();});
-
-        if *appleft == MaybeInf::Finite(0u32) {
-            break;
-        }
-
-        *appleft-= 1;
-
-        let (unconsumed, replace) = variant.try_match(&input, rules, "")?;
-        input = replace + unconsumed;
-    }
-    Ok(input)
-}
-
-fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Result<String, MatchError> {
+pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Result<String, MatchError> {
     let mut result = String::new();
     let mut input = input.to_string();
 
@@ -370,7 +208,7 @@ fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Result
             input = input[end..].to_string();
         } else {
             // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
-            let new_input = apply_sequence(&input[end..], name, rules, &mut appleft)?;
+            let new_input = rules[&name].apply_sequence(&input[end..], rules, &mut appleft)?;
             input = new_input;
         }
         
@@ -413,6 +251,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let step_count: &str = userline.get(1).unwrap_or(&"1");
                 let step_count: u32 = step_count.parse().unwrap();
                 let result = process(&buffer, &mut HashMap::new(), MaybeInf::Finite(step_count))?;
+                File::create(&target)?.write(result.as_bytes())?;
+            } else if userline[0] == "r" || userline[0] == "run" {
+                File::open(&target)?.read_to_string(&mut buffer)?;
+                let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite)?;
                 File::create(&target)?.write(result.as_bytes())?;
             } else {
                 println!("unknown command '{}'", userline[0]);

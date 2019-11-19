@@ -32,7 +32,7 @@
 %: ident {::alnum_}
 %: ident {::alnum_::ident}
 
-// generators are rules that turn a %!: rule into a %: rule
+// generators are rules that turn a %!: rule into a % : rule
 // %!: rules can have cooler syntax
 
 // generate rule that matches a string until `end` (if it has not been escaped with `esc`)
@@ -89,7 +89,6 @@
 // which applies the given rule anywhere in the following text wherever it can match.
 // this generator uses the namespace `genName`_**
 %: genApply {%!.:::nwh.apply::nwh.anywhere::nwh:ruleName:ident} {
-    %/!.: apply anywhere :ruleName
     %.: :ruleName._1generable {.:x.:anychar.} {.:x.}
     %.: :ruleName._1generable {.:r.::ruleName.} {.:r.}
     %.: :ruleName._generable {.}
@@ -97,7 +96,13 @@
     %.: {.:g.::ruleName._generable.} {.:g.}
 }
 
-// %!: apply anywhere genApply
+// 
+    %: genApply_1generable {:x:anychar} {:x}
+    %: genApply_1generable {:r:genApply} {:r}
+    %: genApply_generable {}
+    %: genApply_generable {:r:genApply_1generable:g:genApply_generable} {:r:g}
+    %: {:g:genApply_generable} {:g}
+
 %: 1generable {:x:anychar} 
 %: 1generable {:r:genApply}
 %: generable {}
@@ -106,7 +111,6 @@
 
 // infinite loop occurs at this chunk of text
 
-    %/!: apply anywhere genRuleEndText
     %: genRuleEndText_1generable {:x:anychar} {:x}
     %: genRuleEndText_1generable {:r:genRuleEndText} {:r}
     %: genRuleEndText_generable {}
@@ -114,7 +118,6 @@
     %: {:g:genRuleEndText_generable} {:g}
 
 
-    %/!: apply anywhere genRuleMaybe
     %: genRuleMaybe_1generable {:x:anychar} {:x}
     %: genRuleMaybe_1generable {:r:genRuleMaybe} {:r}
     %: genRuleMaybe_generable {}
@@ -122,7 +125,6 @@
     %: {:g:genRuleMaybe_generable} {:g}
 
 
-    %/!: apply anywhere genRulePlus
     %: genRulePlus_1generable {:x:anychar} {:x}
     %: genRulePlus_1generable {:r:genRulePlus} {:r}
     %: genRulePlus_generable {}
@@ -130,7 +132,6 @@
     %: {:g:genRulePlus_generable} {:g}
 
 
-    %/!: apply anywhere genRuleStar
     %: genRuleStar_1generable {:x:anychar} {:x}
     %: genRuleStar_1generable {:r:genRuleStar} {:r}
     %: genRuleStar_generable {}
@@ -150,5 +151,3 @@
     
 
 %: {:t:manynumbers} {success. .{:t.}}
-
-%: python

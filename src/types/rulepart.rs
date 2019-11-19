@@ -1,0 +1,207 @@
+use std::collections::{BTreeMap, HashMap};
+use crate::*;
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct RulePart<Invocation: Clone> {
+    text: String,
+    /// each usize, an index in .text, is associated with all the rule invocations that appear (in the given order) right before the index
+    /// it is assumed that there are no keys > text.len()
+    /// a key of text.len() means that the invocations are at the end of the rule part, without any text afterwards
+    invocations: BTreeMap<usize, Vec<Invocation>>,
+}
+
+#[derive(Clone)]
+pub struct RulePartBuilder<Invocation: Clone>(RulePart<Invocation>);
+
+impl<Invocation: Clone> RulePart<Invocation> {
+    pub fn new() -> RulePartBuilder<Invocation> {
+        RulePartBuilder(
+            RulePart {
+                text: String::new(),
+                invocations: BTreeMap::new(),
+            }
+        )
+    }
+
+    pub fn literally(text: impl Into<String>) -> RulePart<Invocation> {
+        RulePart {
+            text: text.into(),
+            invocations: BTreeMap::new(),
+        }
+    }
+
+    /// iterate text and invocation segments
+    /// might include empty items ("", &[])
+    pub fn iter(&self) -> impl Iterator<Item=(&str, &[Invocation])> {
+        use std::rc::Rc;
+        use std::cell::RefCell;
+
+        let last_index = Rc::new(RefCell::new(0usize));
+        let last_index2 = last_index.clone();
+        self.invocations.iter()
+            // assuming .map() is called exactly once, in the correct order.
+            .map(move |(&index, invocs)| {
+                let from: usize = *last_index2.borrow();
+                let to: usize = index;
+                *last_index2.borrow_mut() = index;
+                (&self.text[from..to], invocs.as_slice())
+            })
+            .chain(Some(1).iter().map(move |_| {
+                (&self.text[*last_index.borrow()..], &[][..])
+            }))
+    }
+
+    /// return last invocation at the end of rule if the rule does not end in text
+    pub fn end_invocation(&self) -> Option<&Invocation> {
+        self.invocations.get(&self.text.len()).and_then(|invocs| invocs.iter().last())
+    }
+
+    fn pop_end_invoc(&mut self) -> Option<Invocation> {
+        self.invocations.get_mut(&self.text.len()).and_then(|invocs| invocs.pop())
+    }
+
+    fn push_invoc(&mut self, invoc: Invocation) {
+        if let Some(invocs) = self.invocations.get_mut(&self.text.len()) {
+            invocs.push(invoc);
+        }
+    }
+}
+
+#[test]
+fn test_iter_last() {
+    let ab = RuleInvocation::new("a", "b");
+    let cd = RuleInvocation::new("c", "d");
+    let ef = RuleInvocation::new("e", "f");
+
+    // filter out ("", &[]) from RulePart::iter()
+    let nonempty = |(string, slice): &(&str, &[_])| !string.is_empty() || slice.len() != 0;
+
+    let mut part = Header::new();
+    part.add_invoc(ab.clone());
+    assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("", &[ab][..])));
+    part.add_str("01");    
+    part.add_invoc(cd.clone());
+    part.add_invoc(ef.clone());
+    assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("01", &[cd, ef][..])));
+    part.add_str("23"); 
+    assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("23", &[][..])))
+}
+
+ pub fn parse_header(s: impl AsRef<str>) -> MatchResult<Header> {
+    let added_braces = format!("{{{}}}", s.as_ref());
+    let (rest, header) = match_rule_part(&added_braces, match_invocation)?;
+    if rest.is_empty() {
+        Ok(header.unwrap())
+    } else {
+        Err(MatchError::expected("end of string", rest))
+    }
+}
+
+pub fn parse_body(s: impl AsRef<str>) -> MatchResult<Body> {
+    let added_braces = format!("{{{}}}", s.as_ref());
+    let (rest, header) = match_rule_part(&added_braces, match_var)?;
+    if rest.is_empty() {
+        Ok(header.unwrap())
+    } else {
+        Err(MatchError::expected("end of string", rest))
+    }
+}
+
+#[test]
+fn test_rule_part_iter() {
+    let ab = RuleInvocation::new("a", "b");
+    let cd = RuleInvocation::new("c", "d");
+    let ef = RuleInvocation::new("e", "f");
+
+    let mut header = Header::new();
+    header.add_invoc(ab.clone());
+    header.add_str("12");
+    header.add_invoc(cd.clone());
+    header.add_invoc(ef.clone());
+    header.add_str("34");
+    let header = header.seal();
+
+    assert_eq!(
+        header.iter().collect::<Vec::<_>>(),
+        vec![("", &[ab][..]), ("12", &[cd, ef][..]), ("34", &[][..])]
+    );
+}
+
+impl<Invocation: Clone> RulePartBuilder<Invocation> {
+    pub fn add_char(&mut self, c: char) {
+        self.0.text.push(c);
+    }
+
+    pub fn add_str(&mut self, s: impl AsRef<str>) {
+        self.0.text.push_str(s.as_ref());
+    }
+
+    /// adds invocation to the end of the header/body definition
+    pub fn add_invoc(&mut self, invoc: Invocation) {
+        self.0.invocations.entry(self.0.text.len())
+            .or_insert(Vec::new()).push(invoc);
+    }
+
+    pub fn seal(self) -> RulePart<Invocation> {self.0}
+}
+
+pub type Header = RulePart<RuleInvocation>;
+pub type Body = RulePart<VarInvocation>;
+
+impl Header {
+    // todo: this might have to be optimized
+    pub fn without_tail_recursion<R>(&self, tail_name: impl AsRef<str>, inner: impl FnOnce(&RulePart<RuleInvocation>) -> MatchResult<R>) -> MatchResult<R> {
+        let mut tail = None;
+
+        let mut clone = self.clone();
+
+        if let Some(invoc) = clone.pop_end_invoc() {
+            if invoc.rule() == tail_name.as_ref() {
+                tail = Some(invoc);
+            } else {
+                clone.push_invoc(invoc);
+            }
+        }
+        
+        let result = inner(&clone);
+
+        if let Some(invoc) = tail {
+            clone.push_invoc(invoc);
+        }
+
+        result
+    }
+
+    pub fn as_body(&self) -> Body {
+        let invocations = self.invocations.iter()
+            .map(|(key, invocations)| {
+                (*key, 
+                    invocations.iter().map(|invoc| VarInvocation(invoc.result_var().into())).collect::<Vec<_>>()
+                )
+            })
+            .collect();
+            
+        RulePart {
+            text: self.text.clone(),
+            invocations: invocations,
+        }
+    }
+}
+
+impl Body {
+    pub fn bind_vars(&self, named_binds: &HashMap<String, String>, unnamed_binds: &Vec<String>) -> String {
+        let mut anon_i = 0;
+        self.iter().fold(String::new(), |mut buf, (part, invocations)| {
+            buf.push_str(part);
+            for VarInvocation(var) in invocations {
+                if !var.is_empty() {
+                    buf.push_str(&named_binds[var]);
+                } else {
+                    buf.push_str(&unnamed_binds[anon_i]);
+                    anon_i += 1;
+                }
+            }
+            buf
+        })
+    }
+}
