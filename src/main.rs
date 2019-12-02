@@ -224,7 +224,6 @@ use std::fs::File;
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
-
     let mut buffer = String::new();
     let stdin = io::stdin();
 
@@ -246,7 +245,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     println!("No target given.");
                     target
                 });
-            } else if userline[0] == "s" || userline[0] == "step" {
+            } else if userline[0] == "s_unsupported" || userline[0] == "step_unsupported" {
                 File::open(&target)?.read_to_string(&mut buffer)?;
                 let step_count: &str = userline.get(1).unwrap_or(&"1");
                 let step_count: u32 = step_count.parse().unwrap();

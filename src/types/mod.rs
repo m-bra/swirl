@@ -34,9 +34,8 @@ impl RuleVariant {
             let (input, (results, anon_results)) = match_rule_head(input, header, rules)?;
             (input, body.bind_vars(&results, &anon_results))
         } else {
+            let recursion_var = self.header.end_invocation().unwrap().result_var();
             self.header.without_tail_recursion(name, |header| {
-                let recursion_var = self.header.end_invocation().unwrap().result_var();
-
                 // apply this (which is the last) variant (without tail recursion) 0 or more times
                 let mut current_input = input;
                 let mut frame_stack = Vec::new(); // each frame contains the input before matching its rule
@@ -55,6 +54,9 @@ impl RuleVariant {
                 // unwind the frame one time and try again.
                 let mut frame_result: MatchResult<(&str, String)> = Err(frame_result.err().unwrap());
                 while {
+                    // todo:
+                    // i feel like in this line, if rules[name] is self, we'll get into problems (see doc of Header::without_tail_recursion())
+                    // which means that rules with tail recursion that also recurse besides at the tail will crash lol but lets ignore that hahaahha
                     frame_result = rules[name].apply_last_skip(current_input, rules, 1, vec![frame_result.err().unwrap()]);
                     frame_result.is_err()
                 } {
