@@ -88,7 +88,7 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
     let header = header.ok_or_else(|| MatchError::expected("Rule header", header_start))?;
     let input = match_whitespaces(input)?;
     let (input, body) = match_rule_part(input, match_var)?;
-    
+
     Ok (
         (input, (rule_name, RuleVariant {header: header, body: body, append: String::new()}))
     )
@@ -112,7 +112,7 @@ fn _test_replace_vars() {
 /// yes we are processing escapes here, because that needs to be coupled with searching matches
 /// so that occurences can always be escaped and 'hidden' from this function
 /// errors in `match_fn` will be treated as "cant match; ignore", while errors in `replace` will be returned by this function
-pub fn replace_matches<'a, 'b, In, Out, AR>(escape_text: &'a str, mut match_fn: impl MatchFn<'a, &'b In, Out>, param: &'b In, 
+pub fn replace_matches<'a, 'b, In, Out, AR>(escape_text: &'a str, mut match_fn: impl MatchFn<'a, &'b In, Out>, param: &'b In,
         mut replace: impl FnMut(&str, Out) -> MatchResult<AR>) -> MatchResult<String> where AR: AsRef<str> {
     let mut text = escape_text;
     let mut result = String::with_capacity(text.len() * 2);
@@ -164,12 +164,12 @@ fn test_apply_last() {
         variants: vec![
             RuleVariant {
                 header: parse_header("::digit").unwrap(),
-                body: None, 
+                body: None,
                 append: "".to_string(),
             },
             RuleVariant {
-                header: parse_header(":d:digit::digits").unwrap(), 
-                body: Some(parse_body("Two .times: :d:d").unwrap()), 
+                header: parse_header(":d:digit::digits").unwrap(),
+                body: Some(parse_body("Two .times: :d:d").unwrap()),
                 append: "".to_string(),
             },
     ]};
@@ -211,7 +211,7 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Re
             let new_input = rules[&name].apply_sequence(&input[end..], rules, &mut appleft)?;
             input = new_input;
         }
-        
+
     }
 
     // the rest of the input contains no more rule definitions, so push it to the results
@@ -219,12 +219,22 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Re
     Ok(result)
 }
 
+fn process_file(target: &str, steps: MaybeInf<u32>) -> Result<(), Box<dyn Error>> {
+    let mut buffer = String::new();
+    File::open(&target)?.read_to_string(&mut buffer)?;
+
+    let result = process(&buffer, &mut HashMap::new(), steps)?;
+
+    File::create(&target)?.write(result.as_bytes())?;
+
+    Ok(())
+}
+
 use std::io::{self, Read, Write};
 use std::fs::File;
 use std::error::Error;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let mut buffer = String::new();
+fn repl() -> Result<(), Box<dyn Error>> {
     let stdin = io::stdin();
 
     let mut target = "input.txt".to_string();
@@ -246,15 +256,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                     target
                 });
             } else if userline[0] == "s_unsupported" || userline[0] == "step_unsupported" {
-                File::open(&target)?.read_to_string(&mut buffer)?;
                 let step_count: &str = userline.get(1).unwrap_or(&"1");
                 let step_count: u32 = step_count.parse().unwrap();
-                let result = process(&buffer, &mut HashMap::new(), MaybeInf::Finite(step_count))?;
-                File::create(&target)?.write(result.as_bytes())?;
+                process_file(&target, MaybeInf::Finite(step_count))?;
             } else if userline[0] == "r" || userline[0] == "run" {
-                File::open(&target)?.read_to_string(&mut buffer)?;
-                let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite)?;
-                File::create(&target)?.write(result.as_bytes())?;
+                process_file(&target, MaybeInf::Infinite)?;
             } else {
                 println!("unknown command '{}'", userline[0]);
             }
@@ -266,6 +272,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    if let Some(arg) = std::env::args().skip(1).next() {
+        process_file(arg, MaybeInf::Infinite);
+    } else {
+        process_file("input.txt", MaybeInf::Infinite);
+    }
 }
 
 #[test]

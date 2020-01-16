@@ -1,5 +1,5 @@
 [package]
-name = "syntax"
+name = "swirl"
 version = "0.1.0"
 authors = ["Merlin Brandt <merlin.brandt@hotmail.de>"]
 edition = "2018"
@@ -11,7 +11,3 @@ regex = "1"
 lazy_static = "1.4"
 finally-block = "0.2.0"
 criterion = "0.3.0"
-
-[[bench]]
-name = "my_benchmark"
-harness = false
