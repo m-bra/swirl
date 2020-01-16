@@ -1,8 +1,10 @@
+
+pub static EXAMPLE: &str = r####"
 // 1 whitespace
-%: 1wh {. }
-%: 1wh {.
+%: 1wh { }
+%: 1wh {
 }
-%: newline {.
+%: newline {
 }
 // 0 whitespace
 %: 0wh {}
@@ -29,12 +31,6 @@
 %: anychar {::1wh}
 %: anychar {::opaquechar}
 
-%: replace_whitespace_with_nwh_1 {:c:anychar} {:c}
-%: replace_whitespace_with_nwh_1 {::1wh::nwh} {.:.:nwh}
-%: replace_whitespace_with_nwh {}
-%: replace_whitespace_with_nwh {::replace_whitespace_with_nwh_1 ::replace_whitespace_with_nwh}
-%/: { (with ::nwh whitespace) ::nwh {:result:replace_whitespace_with_nwh}
-
 %: ident {::alnum_}
 %: ident {::alnum_::ident}
 
@@ -42,13 +38,20 @@
 // %!: rules can have cooler syntax
 
 // generate rule that matches a string until `end` (if it has not been escaped with `esc`)
+// does not escape matched string.
+// usage: %!: `ruleName` = end with `end`, escape `esc`
+// this generator uses the namespace `ruleName`_***
+%/: genRuleEndText {%!.:::nwh:ruleName:ident::nwh.=::nwh.end::nwh.with::nwh:end:anychar::nwh.,::nwh.escape::nwh:esc:anychar} {
+    %.: :ruleName {.:x.:anychar.:r.::ruleName.} {.:x.:r.}
+    %.: :ruleName {..:esc..:end.:r.::ruleName.} {..:esc..:end.:r.}
+    %.: :ruleName {..:end.} {.}
+}
+
+// generate rule that matches a string until `end` (if it has not been escaped with `esc`)
 // does escape matched string.
 // usage: %!: `ruleName` = any text, end with `end`, escape with `esc`
 // this generator uses the namespace `ruleName`_***
-%: genRuleEndText {
-    %!.: ::nwh :ruleName:ident ::nwh .= ::nwh
-    any ::nwh text ::nwh , ::nwh end ::nwh with ::nwh :end:anychar ::nwh , ::nwh escape ::nwh with ::nwh :esc:anychar
-} {
+%: genRuleEndText {%!.:::nwh:ruleName:ident::nwh.=::nwh.any::nwh.text::nwh.,::nwh.end::nwh.with::nwh:end:anychar::nwh.,::nwh.escape::nwh.with::nwh:esc:anychar} {
     %.: :ruleName {.:x.:anychar.:r.::ruleName.} {.:x.:r.}
     %.: :ruleName {..:esc.:c.:anychar.:r.::ruleName.} {.:c.:r.}
     %.: :ruleName {..:end.} {.}
@@ -61,12 +64,9 @@
 // repeat innerRule 0 or more times
 // %!: `ruleName` = `innerRule`*
 // only uses namespace `ruleName`
-%: genRuleStar { %!.: ::nwh :ruleName:ident ::nwh .= ::nwh :innerRule:ident ::nwh .* }
-{
-    %/!.:. :ruleName. =. :innerRule.*. [.
-. . . . %:. :ruleName. {.}. {.}.
-. . . . %:. :ruleName. {.:x.::innerRule.:y.::ruleName.}. {.:x.:y.}.
-    ]
+%: genRuleStar {%!.:::nwh:ruleName:ident::nwh.=::nwh:innerRule:ident::nwh.*} {
+    %: :ruleName {.} {.}
+    %: :ruleName {.:x.::innerRule.:y.::ruleName.} {.:x.:y.}
 }
 
 // repeat innerRule 1 or more times
@@ -122,4 +122,5 @@
 %!: manynumbers=09*
 
 
-%: {:t:manynumbers} {success. .{:t.}}7468
+%: {:t:manynumbers} {success. .{:t.}}
+"####;

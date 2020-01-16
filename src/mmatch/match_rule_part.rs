@@ -50,7 +50,7 @@ pub fn match_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Rules)
         for &RuleInvocation(ref var, ref rule) in invocs {
             input = {
                 let rule = rules.get(rule)
-                    .ok_or(MatchError::unknown_rule(rule, "<>"))?;
+                    .ok_or_else(|| MatchError::unknown_rule(rule, "<>"))?;
                 let (input, result) = rule.apply_last(input, rules)?;
 
                 if !var.is_empty() {
@@ -89,7 +89,7 @@ fn test_match_rule_part() {
 /// where `Invocation` is either RuleInvocation or VarInvocation
 /// and `match_invocation` either match_invocation or match_var
 /// if input does not start with '{', no error is returned but just None.
-pub fn match_rule_part<'a, Invocation: Clone>(input: &'a Input, mut match_invocation: impl FnMut(&'a Input) -> MatchResult<(&'a Input, Invocation)>) 
+pub fn match_rule_part<'a, Invocation: Clone>(input: &'a Input, mut match_invocation: impl FnMut(&'a Input) -> MatchResult<(&'a Input, Invocation)>)
         -> MatchResult<(&'a Input, Option<RulePart<Invocation>>)> {
     let mut rulepart = RulePart::new();
 
@@ -98,15 +98,18 @@ pub fn match_rule_part<'a, Invocation: Clone>(input: &'a Input, mut match_invoca
         Err(_) => return Ok((input, None)),
     };
 
-    loop { input = 
+    loop { input =
         if let Ok((input, invo)) = match_invocation(input) {
             rulepart.add_invoc(invo);
             input
         } else if let Some('}') = input.chars().next() {
             break;
         } else {
+            let is_unescaped = input.chars().next().map(|c| c != ESCAPE_CHAR).unwrap_or(false);
             let (input, c) = match_escapable_char(input, ESCAPE_CHAR)?;
-            rulepart.add_char(c);
+            if !(is_unescaped && c.is_whitespace()) {
+                rulepart.add_char(c);
+            }
             input
         }
     };

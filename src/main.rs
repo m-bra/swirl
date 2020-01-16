@@ -13,6 +13,8 @@ use error::*;
 mod mmatch;
 use mmatch::*;
 
+mod example_input;
+
 #[macro_use]
 extern crate lazy_static;
 
@@ -136,7 +138,7 @@ pub fn replace_matches<'a, 'b, In, Out, AR>(escape_text: &'a str, mut match_fn: 
 /// taking into account escaped ".:", then processing escapes
 pub fn replace_vars(text: &str, variables: &HashMap<String, String>) -> MatchResult<String> {
     replace_matches(text, match_var_, &(), |input, VarInvocation(ident)| {
-        variables.get(&ident).ok_or(MatchError::unknown_variable(&ident, input))
+        variables.get(&ident).ok_or_else(|| MatchError::unknown_variable(&ident, input))
     })
 }
 
@@ -274,12 +276,17 @@ fn repl() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
+
+    //process(example_input::EXAMPLE, &mut HashMap::new(), MaybeInf::Infinite)?;
+    //return Ok(());
+
     if let Some(arg) = std::env::args().skip(1).next() {
-        process_file(arg, MaybeInf::Infinite);
+        process_file(&arg, MaybeInf::Infinite)
     } else {
-        process_file("input.txt", MaybeInf::Infinite);
+        process_file("input.txt", MaybeInf::Infinite)
     }
+        .map_err(|err| println!("{}", err));
 }
 
 #[test]

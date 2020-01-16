@@ -3,7 +3,7 @@ use std::cell::UnsafeCell;
 use crate::*;
 
 #[derive(Debug)]
-pub struct RulePart<Invocation: Clone> {    
+pub struct RulePart<Invocation: Clone> {
     text: String,
     /// each usize, an index in .text, is associated with all the rule invocations that appear (in the given order) right before the index
     /// it is assumed that there are no keys > text.len()
@@ -88,11 +88,11 @@ fn test_iter_last() {
     let mut part = Header::new();
     part.add_invoc(ab.clone());
     assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("", &[ab][..])));
-    part.add_str("01");    
+    part.add_str("01");
     part.add_invoc(cd.clone());
     part.add_invoc(ef.clone());
     assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("01", &[cd, ef][..])));
-    part.add_str("23"); 
+    part.add_str("23");
     assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("23", &[][..])))
 }
 
@@ -151,7 +151,7 @@ impl<Invocation: Clone> RulePartBuilder<Invocation> {
             self.0.invocations.entry(self.0.text.len())
                 .or_insert(UnsafeCell::new(Vec::new()))
                 .get().as_mut().unwrap()
-                .push(invoc);           
+                .push(invoc);
         }
     }
 
@@ -159,6 +159,7 @@ impl<Invocation: Clone> RulePartBuilder<Invocation> {
 }
 
 pub type Header = RulePart<RuleInvocation>;
+
 pub type Body = RulePart<VarInvocation>;
 
 impl Header {
@@ -193,7 +194,7 @@ impl Header {
                 (*key, UnsafeCell::new(invocations))
             })
             .collect();
-            
+
         RulePart {
             text: self.text.clone(),
             invocations: invocations,

@@ -47,7 +47,7 @@ pub fn match_ident<'a>(input: &'a Input) -> MatchResult<(&'a Input, &str)> {
 }
 
 pub fn match_var<'a>(input: &'a Input) -> MatchResult<(&'a Input, VarInvocation)> {
-    match_char(input, ':').and_then(match_ident).map(|(input, ident)| (input, 
+    match_char(input, ':').and_then(match_ident).map(|(input, ident)| (input,
         VarInvocation(ident.into())
     ))
 }
@@ -109,11 +109,11 @@ pub fn test_match_escapable_char() {
 pub fn match_escapable_char(input: &Input, escape: char) -> MatchResult<(&Input, char)> {
     let mut input = input.chars();
     let c1 = input.next()
-        .ok_or(MatchError::expected("some char", input.as_str()))?;
+        .ok_or_else(|| MatchError::expected("some char", input.as_str()))?;
 
     if c1 == escape {
         let c2 = input.next()
-            .ok_or(MatchError::expected("some char", input.as_str()))?;
+            .ok_or_else(|| MatchError::expected("some char", input.as_str()))?;
         (input.as_str(), c2)
     } else {
         (input.as_str(), c1)

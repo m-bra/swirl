@@ -1,8 +1,8 @@
 // 1 whitespace
-%: 1wh { }
-%: 1wh {
+%: 1wh {. }
+%: 1wh {.
 }
-%: newline {
+%: newline {.
 }
 // 0 whitespace
 %: 0wh {}
@@ -32,7 +32,7 @@
 %: ident {::alnum_}
 %: ident {::alnum_::ident}
 
-// generators are rules that turn a %!: rule into a %: rule
+// generators are rules that turn a %!: rule into a % : rule
 // %!: rules can have cooler syntax
 
 // generate rule that matches a string until `end` (if it has not been escaped with `esc`)
@@ -49,14 +49,17 @@
 // does escape matched string.
 // usage: %!: `ruleName` = any text, end with `end`, escape with `esc`
 // this generator uses the namespace `ruleName`_***
-%: genRuleEndText {%!.:::nwh:ruleName:ident::nwh.=::nwh.any::nwh.text::nwh.,::nwh.end::nwh.with::nwh:end:anychar::nwh.,::nwh.escape::nwh.with::nwh:esc:anychar} {
+%: genRuleEndText {
+    %!.: ::nwh :ruleName:ident ::nwh .= ::nwh
+    any ::nwh text ::nwh , ::nwh end ::nwh with ::nwh :end:anychar ::nwh , ::nwh escape ::nwh with ::nwh :esc:anychar
+} {
     %.: :ruleName {.:x.:anychar.:r.::ruleName.} {.:x.:r.}
     %.: :ruleName {..:esc.:c.:anychar.:r.::ruleName.} {.:c.:r.}
     %.: :ruleName {..:end.} {.}
 }
 
 // idea how to implement namespaces with static contracts:
-// a rule that wants to be the only one to use the namespace abc_** 
+// a rule that wants to be the only one to use the namespace abc_**
 // can formulate a static contract requiring no identifier to have this form.
 
 // repeat innerRule 0 or more times
@@ -97,10 +100,10 @@
 }
 
 // %!: apply anywhere genApply
-%: 1generable {:x:anychar} 
+%: 1generable {:x:anychar}
 %: 1generable {:r:genApply}
 %: generable {}
-%: generable {:r:1generable:g:generable} 
+%: generable {:r:1generable:g:generable}
 %: {:g:generable}
 
 // infinite loop occurs at this chunk of text
@@ -118,6 +121,6 @@
 %/: {.;::nwh:text:braced_esctext} {:text};
 
 %!: manynumbers=09*
-    
+
 
 %: {:t:manynumbers} {success. .{:t.}}

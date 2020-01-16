@@ -16,9 +16,9 @@ impl fmt::Display for VarInvocation {
 impl<Invocation: Clone> fmt::Display for RulePart<Invocation> where Invocation: fmt::Display {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (part, invocations) in self.iter() {
-            write!(f, "{}", part)?;
+            write!(f, "{} ", part)?;
             for invocation in invocations {
-                write!(f, "{}", invocation)?;
+                write!(f, "{} ", invocation)?;
             }
         }
         Ok(())

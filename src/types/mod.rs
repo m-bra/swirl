@@ -41,7 +41,7 @@ impl RuleVariant {
                 let mut frame_stack = Vec::new(); // each frame contains the input before matching its rule
                 let mut frame_result = Ok(("", (HashMap::new(), Vec::new()))); // result of current frame
                 while {
-                    frame_result = match_rule_head(current_input, header, rules); 
+                    frame_result = match_rule_head(current_input, header, rules);
                     frame_result.is_ok()
                 } {
                     let (input, results) = frame_result.unwrap();
@@ -80,8 +80,8 @@ impl RuleVariant {
                 (input, result_str).tap(Ok)
             })?
         }.tap(Ok)
-        
-        
+
+
         })().trace({
             format!("%: {} {{{}}} on '{}'", name.as_ref(), self.header, firstline(input))
         })
@@ -111,7 +111,7 @@ impl Rule {
 impl Rule {
     /// start trying to apply rule variants from the bottom up, skipping a number of variants
     pub fn apply_last_skip<'a>(&self, input: &'a str, rules: &Rules, skip: usize, candidate_errors: Vec<MatchError>) -> MatchResult<(&'a str, String)> {
-        //let variants = &rules.get(name).ok_or(MatchError::new(format!("Rule '{}' does not exist.", name), &mut vec![]))?.variants;
+        //let variants = &rules.get(name).ok_or_else(|| MatchError::new(format!("Rule '{}' does not exist.", name), &mut vec![]))?.variants;
         let mut candidate_errors = candidate_errors;
         for (i, v) in self.variants.iter().rev().enumerate().skip(skip) {
             match v.try_match(input, rules, &self.name, i) {
