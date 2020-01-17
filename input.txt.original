@@ -29,21 +29,24 @@
 %: anychar {::1wh}
 %: anychar {::opaquechar}
 
+%: maybe_not {not}
+%: maybe_not {}
+%: not_curled_end not {.}}
+%: replace_whitespace_with_nwh_1 {::not_curled_end:c:anychar} {:c}
+%: replace_whitespace_with_nwh_1 {::1wh::nwh} {.:.:nwh}
+%: replace_whitespace_with_nwh {}
+%: replace_whitespace_with_nwh {::replace_whitespace_with_nwh_1 ::replace_whitespace_with_nwh}
+%: with_whitespace_block {
+    (with ::nwh whitespace) ::nwh :m:maybe_not ::nwh {:result:replace_whitespace_with_nwh.}
+} {
+    :m {:result.}
+}
+
 %: ident {::alnum_}
 %: ident {::alnum_::ident}
 
 // generators are rules that turn a %!: rule into a % : rule
 // %!: rules can have cooler syntax
-
-// generate rule that matches a string until `end` (if it has not been escaped with `esc`)
-// does not escape matched string.
-// usage: %!: `ruleName` = end with `end`, escape `esc`
-// this generator uses the namespace `ruleName`_***
-%/: genRuleEndText {%!.:::nwh:ruleName:ident::nwh.=::nwh.end::nwh.with::nwh:end:anychar::nwh.,::nwh.escape::nwh:esc:anychar} {
-    %.: :ruleName {.:x.:anychar.:r.::ruleName.} {.:x.:r.}
-    %.: :ruleName {..:esc..:end.:r.::ruleName.} {..:esc..:end.:r.}
-    %.: :ruleName {..:end.} {.}
-}
 
 // generate rule that matches a string until `end` (if it has not been escaped with `esc`)
 // does escape matched string.
@@ -65,9 +68,12 @@
 // repeat innerRule 0 or more times
 // %!: `ruleName` = `innerRule`*
 // only uses namespace `ruleName`
-%: genRuleStar {%!.:::nwh:ruleName:ident::nwh.=::nwh:innerRule:ident::nwh.*} {
-    %: :ruleName {.} {.}
-    %: :ruleName {.:x.::innerRule.:y.::ruleName.} {.:x.:y.}
+%: genRuleStar { %!.: ::nwh :ruleName:ident ::nwh .= ::nwh :innerRule:ident ::nwh .* }
+{
+    %/!.:. :ruleName. =. :innerRule.*. [.
+. . . . %:. :ruleName. {.}. {.}.
+. . . . %:. :ruleName. {.:x.::innerRule.:y.::ruleName.}. {.:x.:y.}.
+    ]
 }
 
 // repeat innerRule 1 or more times
@@ -106,11 +112,11 @@
 %: generable {:r:1generable:g:generable}
 %: {:g:generable}
 
-// infinite loop occurs at this chunk of text
 %!: apply anywhere genRuleEndText
 %!: apply anywhere genRuleMaybe
 %!: apply anywhere genRulePlus
 %!: apply anywhere genRuleStar
+%!: apply anywhere with_whitespace_block
 
 // function syntax: f(any text that does not contain unescaped .))
 // function input will be unescaped content between '(' and ')'
@@ -123,4 +129,4 @@
 %!: manynumbers=09*
 
 
-%: {:t:manynumbers} {success. .{:t.}}
+%: {:t:manynumbers} {success. .{:t.}}7468
