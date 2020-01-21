@@ -6,6 +6,15 @@ use crate::*;
 mod match_rule_part;
 pub use match_rule_part::*;
 
+mod match_rule_def;
+pub use match_rule_def::*;
+
+mod match_rule_variant;
+pub use match_rule_variant::*;
+
+mod match_rule;
+pub use match_rule::*;
+
 pub type Input = str;
 
 // function that receives input string pointer and some in params,

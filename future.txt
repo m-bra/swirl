@@ -1,0 +1,3 @@
+
+ * Implement folding of arbitrary text through private unicode symbols.
+ * compile rules and add as dynamic modules on-the-fly

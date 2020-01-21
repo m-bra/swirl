@@ -203,20 +203,29 @@ impl Header {
 }
 
 impl Body {
-    pub fn bind_vars(&self, named_binds: &HashMap<String, String>, unnamed_binds: &Vec<String>) -> String {
+    pub fn bind_vars(&self, named_binds: &HashMap<String, String>, unnamed_binds: &Vec<String>) -> MatchResult<String> {
         let mut anon_i = 0;
-        self.iter().fold(String::new(), |mut buf, (part, invocations)| {
+        let mut buf = String::new();
+        for (part, invocations) in self.iter() {
             buf.push_str(part);
             for VarInvocation(var) in invocations {
                 if !var.is_empty() {
-                    buf.push_str(&named_binds[var]);
+                    if named_binds.contains_key(var) {
+                        buf.push_str(&named_binds[var]);
+                    } else {
+                        return MatchError::unknown_variable(var, "<>").tap(Err)
+                    }
                 } else {
-                    buf.push_str(&unnamed_binds[anon_i]);
+                    if anon_i < unnamed_binds.len() {
+                        buf.push_str(&unnamed_binds[anon_i]);
+                    } else {
+                        return MatchError::new("Too many anonymous variables").tap(Err);
+                    }
                     anon_i += 1;
                 }
             }
-            buf
-        })
+        }
+        Ok(buf)
     }
 }
 

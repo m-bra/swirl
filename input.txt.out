@@ -1,0 +1,7 @@
+// optimization: grouping all anywhere applies to one
+
+
+
+comment(// comment
+)
+no comment

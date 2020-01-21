@@ -1,44 +1,6 @@
 use crate::*;
 
-#[test]
-fn _test_match_rule_head() {
-    let mut rules = HashMap::new();
-    rules.insert("number".to_string(), Rule {
-        name: "number".to_string(),
-        variants: vec![
-            RuleVariant {
-                header: Header::literally("0"),
-                body: None,
-                append: "".to_string()
-            },
-            RuleVariant {
-                header: Header::literally("1"),
-                body: None,
-                append: "".to_string(),
-            }
-        ]
-    });
-    let mut results = HashMap::new();
-    results.insert("n1".to_string(), "1".to_string());
-    results.insert("n2".to_string(), "0".to_string());
-    let anon_results = vec!["1".to_string()];
-
-    let (_, rule_head) = match_rule_part("{I have.::n1:number:n2:number.:apples......::number}", match_invocation).unwrap();
-    let rule_head = rule_head.unwrap();
-
-    assert_eq!(
-        match_rule_head(
-            "I have:10:apples...1 and 2 bananas", &rule_head, &rules
-        ),
-        Ok((" and 2 bananas", (results, anon_results)))
-    );
-}
-
-// match rule header with the start of "input", possibly invoking other rules
-// bind results of invocations to the specified variables (:var:rule)
-// bind results of anonymous invocations to vector in correct order (::rule)
-// return advanced input pointer or MatchError
-pub fn match_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Rules)
+fn match_positive_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Rules)
             -> MatchResult<(&'a Input, (HashMap<String, String>, Vec<String>))> {
     let mut results = HashMap::new();
     let mut anon_results = vec![];
@@ -51,7 +13,7 @@ pub fn match_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Rules)
             input = {
                 let rule = rules.get(rule)
                     .ok_or_else(|| MatchError::unknown_rule(rule, "<>"))?;
-                let (input, result) = rule.apply_last(input, rules)?;
+                let (input, result) = rule.match_last(input, rules)?;
 
                 if !var.is_empty() {
                     // TODO: could panic here
@@ -67,6 +29,29 @@ pub fn match_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Rules)
     }
 
     Ok((input, (results, anon_results)))
+}
+
+// match rule header with the start of "input", possibly invoking other rules
+// bind results of invocations to the specified variables (:var:rule)
+// bind results of anonymous invocations to vector in correct order (::rule)
+// return advanced input pointer or MatchError
+pub fn match_rule_head<'a>(input: &'a Input, rule_head: &Header, negated: bool, rules: &Rules)
+            -> MatchResult<(&'a Input, (HashMap<String, String>, Vec<String>))> {
+
+    let inner_result = match_positive_rule_head(input, rule_head, rules);
+
+    if negated {
+        match inner_result {
+            Ok(_) => {
+                MatchError::expected(&format!("not {}", rule_head), input).tap(Err)
+            },
+            Err(_) => {
+                Ok((input, (HashMap::new(), Vec::new())))
+            }
+        }
+    } else {
+        inner_result
+    }
 }
 
 #[test]
@@ -115,4 +100,40 @@ pub fn match_rule_part<'a, Invocation: Clone>(input: &'a Input, mut match_invoca
     };
     let input = match_char(input, '}').expect("Internal error: Next char after loop in match_rule_part() has to be '}'!");
     Ok((input, Some(rulepart.seal())))
+}
+
+#[test]
+fn _test_match_rule_head() {
+    let mut rules = HashMap::new();
+    rules.insert("number".to_string(), Rule {
+        name: "number".to_string(),
+        variants: vec![
+            RuleVariant {
+                header: Header::literally("0"),
+                header_negated: false,
+                body: None,
+                append: "".to_string()
+            },
+            RuleVariant {
+                header: Header::literally("1"),
+                header_negated: false,
+                body: None,
+                append: "".to_string(),
+            }
+        ]
+    });
+    let mut results = HashMap::new();
+    results.insert("n1".to_string(), "1".to_string());
+    results.insert("n2".to_string(), "0".to_string());
+    let anon_results = vec!["1".to_string()];
+
+    let (_, rule_head) = match_rule_part("{I. have.::n1:number:n2:number.:apples......::number}", match_invocation).unwrap();
+    let rule_head = rule_head.unwrap();
+
+    assert_eq!(
+        match_rule_head(
+            "I have:10:apples...1 and 2 bananas", &rule_head, false, &rules
+        ),
+        Ok((" and 2 bananas", (results, anon_results)))
+    );
 }

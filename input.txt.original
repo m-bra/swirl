@@ -1,3 +1,5 @@
+// optimization: grouping all anywhere applies to one
+
 // 1 whitespace
 %: 1wh {. }
 %: 1wh {.
@@ -29,24 +31,64 @@
 %: anychar {::1wh}
 %: anychar {::opaquechar}
 
-%: maybe_not {not}
-%: maybe_not {}
-%: not_curled_end not {.}}
-%: replace_whitespace_with_nwh_1 {::not_curled_end:c:anychar} {:c}
-%: replace_whitespace_with_nwh_1 {::1wh::nwh} {.:.:nwh}
-%: replace_whitespace_with_nwh {}
-%: replace_whitespace_with_nwh {::replace_whitespace_with_nwh_1 ::replace_whitespace_with_nwh}
-%: with_whitespace_block {
-    (with ::nwh whitespace) ::nwh :m:maybe_not ::nwh {:result:replace_whitespace_with_nwh.}
-} {
-    :m {:result.}
-}
-
 %: ident {::alnum_}
 %: ident {::alnum_::ident}
 
-// generators are rules that turn a %!: rule into a % : rule
-// %!: rules can have cooler syntax
+%: {:space:nwh :abc:ident} {:space.identifier: :abc}
+
+somename
+
+
+// following meta-rule turns the following syntax:
+//    apply `ruleName` anywhere.
+// into rules that apply the given rule anywhere in the following text wherever it can match.
+// this rule uses the namespace `ruleName`_**
+%: ApplyAnywhere { apply ::nwh :ruleName:ident ::nwh anywhere ::nwh .. }
+{
+    apply. :ruleName. anywhere. [.
+. . . . %.:. :ruleName._1applyable. {.:.:anychar.}.
+. . . . %.:. :ruleName._1applyable. {.:.::ruleName.}.
+. . . . %.:. :ruleName._applyable. {.}.
+. . . . %.:. :ruleName._applyable. {.:.::ruleName._1applyable.:.::ruleName._applyable.}.
+. . . . %.:. {.:.::ruleName._applyable.}.
+    ]
+}
+
+apply ApplyAnywhere anywhere [
+    %: 1applyable {::anychar}
+    %: 1applyable {::ApplyAnywhere}
+    %: applyable {}
+    %: applyable {::1applyable::applyable}
+    %: {::applyable}
+]
+
+// putting an 'x' right before balanced square brackets will erase them
+%: XdBrackets {x::brackets} {}
+%: brackets {[::brackets_inner]}
+%: brackets_inner_1 {::not_bracket:c:anychar} {:c}
+%: brackets_inner_1 {[::brackets_inner]}
+%: brackets_inner {}
+%: brackets_inner {::brackets_inner_1::brackets_inner}
+%: not_bracket_open not {.[}
+%: not_bracket_close not {.]}
+%: not_bracket {::not_bracket_open::not_bracket_close}
+
+apply XdBrackets anywhere ?
+
+%: maybe_not {}
+%: maybe_not {not}
+%: not_curled_end not {.}}
+%: replace_whitespace_with_nwh_1 {::not_curled_end:c:anychar} {:c}
+%: replace_whitespace_with_nwh_1 {::1wh::nwh} {. .:.:1wh.:.:nwh. }
+%: replace_whitespace_with_nwh {}
+%: replace_whitespace_with_nwh {::replace_whitespace_with_nwh_1::replace_whitespace_with_nwh}
+%: implicit_whitespace_block {
+    ( ::nwh implicit ::nwh whitespace ::nwh ) ::nwh :m:maybe_not ::nwh {:result:replace_whitespace_with_nwh.}
+} {
+    :m. {:result.}
+}
+
+apply implicit_whitespace_block anywhere .
 
 // generate rule that matches a string until `end` (if it has not been escaped with `esc`)
 // does escape matched string.
@@ -68,12 +110,9 @@
 // repeat innerRule 0 or more times
 // %!: `ruleName` = `innerRule`*
 // only uses namespace `ruleName`
-%: genRuleStar { %!.: ::nwh :ruleName:ident ::nwh .= ::nwh :innerRule:ident ::nwh .* }
+%: genRuleStar (implicit whitespace) {:ruleName:ident = :innerRule:ident.*}
 {
-    %/!.:. :ruleName. =. :innerRule.*. [.
-. . . . %:. :ruleName. {.}. {.}.
-. . . . %:. :ruleName. {.:x.::innerRule.:y.::ruleName.}. {.:x.:y.}.
-    ]
+    %/!.:. :ruleName. =. :innerRule.*.
 }
 
 // repeat innerRule 1 or more times
@@ -92,41 +131,12 @@
     %: :ruleName {.:x.::innerRule.} {.:x.}
 }
 
-// now activate the generators.
-// for that, we activate a single generator, which is used to activate other generators:
-//     %!: apply anywhere `genName`
-// which applies the given rule anywhere in the following text wherever it can match.
-// this generator uses the namespace `genName`_**
-%: genApply {%!.:::nwh.apply::nwh.anywhere::nwh:ruleName:ident} {
-    %.: :ruleName._1generable {.:x.:anychar.} {.:x.}
-    %.: :ruleName._1generable {.:r.::ruleName.} {.:r.}
-    %.: :ruleName._generable {.}
-    %.: :ruleName._generable {.:r.::ruleName._1generable.:g.::ruleName._generable.} {.:r.:g.}
-    %.: {.:g.::ruleName._generable.} {.:g.}
-}
+apply genRuleEndText anywhere
+apply genRuleMaybe anywhere
+apply genRulePlus anywhere
+apply genRuleStar anywhere
 
-// %!: apply anywhere genApply
-%: 1generable {:x:anychar}
-%: 1generable {:r:genApply}
-%: generable {}
-%: generable {:r:1generable:g:generable}
-%: {:g:generable}
-
-%!: apply anywhere genRuleEndText
-%!: apply anywhere genRuleMaybe
-%!: apply anywhere genRulePlus
-%!: apply anywhere genRuleStar
-%!: apply anywhere with_whitespace_block
-
-// function syntax: f(any text that does not contain unescaped .))
-// function input will be unescaped content between '(' and ')'
-// function call is replaced with function output
-%/: f_input = any text, end with ), escape with .
-%/: f_escape {escape.(:x:f_input} {:c}
-
-%/: {.;::nwh:text:braced_esctext} {:text};
-
-%!: manynumbers=09*
+manynumbers = 09*
 
 
-%: {:t:manynumbers} {success. .{:t.}}7468
+%/: {:t:manynumbers} {success. .{:t.}}7468

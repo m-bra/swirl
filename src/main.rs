@@ -34,184 +34,66 @@ mod types;
 use types::*;
 
 #[test]
-fn test_match_rule_def() {
-    let header = || {
-        let mut header = Header::new();
-        header.add_char('.');
-        header.add_invoc(RuleInvocation("".into(), "rule".into()));
-        header.add_char('}');
-        header.seal()
-    };
-
-    let body = {
-        let mut body = Body::new();
-        body.add_invoc(VarInvocation ("var".into()));
-        body.add_char(':');
-        body.add_invoc(VarInvocation ("othervar".into()));
-        body.seal()
-    };
-
-    assert_eq!(
-        match_rule_definition("%:  name1{..::rule.}}19"),
-        Ok(("19", ("name1".into(), RuleVariant {
-            header: header(),
-            body: None,
-            append: "".into(),
-        })))
-    );
-
-    assert_eq!(
-        match_rule_definition("%:  name1{..::rule.}}    {:var.::othervar}19"),
-        Ok(("19", ("name1".into(), RuleVariant {
-            header: header(),
-            body: Some(body),//once told me
-            append: "".into(),
-        })))
-    );
-}
-
-pub fn match_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, (String, RuleVariant))> {
-    let input = match_char(input, '%')?;
-    let input = match_char(input, ':')?;
-    match_inner_rule_definition(input)
-}
-
-/// matches the parts of a rule after '%:' (so that caller might scan for '%:' instead of calling this function everytime)
-pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, (String, RuleVariant))> {
-    // ruleName
-    let input = match_whitespaces(input)?;
-    let (input, rule_name) = match_ident(input).unwrap_or((input, ""));
-    let rule_name = rule_name.into();
-    let input = match_whitespaces(input)?;
-
-    // {header with :rule:invocation.s} {body with :var.s}
-    let header_start = input;
-    let (input, header) = match_rule_part(input, match_invocation)?;
-    let header = header.ok_or_else(|| MatchError::expected("Rule header", header_start))?;
-    let input = match_whitespaces(input)?;
-    let (input, body) = match_rule_part(input, match_var)?;
-
-    Ok (
-        (input, (rule_name, RuleVariant {header: header, body: body, append: String::new()}))
-    )
-}
-
-
-#[test]
-fn _test_replace_vars() {
-    let mut vars = HashMap::new();
-    vars.insert("v1".to_string(), ".!".to_string());
-    vars.insert("v2".to_string(), "not used".to_string());
-    assert_eq!(
-        replace_vars(":v1.:..:v1", &vars), Ok(".!:..!".to_string()),
-    );
-    assert!(
-        replace_vars(":nonexistingvariable", &vars).is_err()
-    )
-}
-
-/// processes and escapes `escape_text`, replacing occurences of `match_fn` with its output piped into the `replace` function
-/// yes we are processing escapes here, because that needs to be coupled with searching matches
-/// so that occurences can always be escaped and 'hidden' from this function
-/// errors in `match_fn` will be treated as "cant match; ignore", while errors in `replace` will be returned by this function
-pub fn replace_matches<'a, 'b, In, Out, AR>(escape_text: &'a str, mut match_fn: impl MatchFn<'a, &'b In, Out>, param: &'b In,
-        mut replace: impl FnMut(&str, Out) -> MatchResult<AR>) -> MatchResult<String> where AR: AsRef<str> {
-    let mut text = escape_text;
-    let mut result = String::with_capacity(text.len() * 2);
-    while !text.is_empty() {
-        text = match match_fn(text, param) {
-            Err(_) => {
-                let (text, c) = match_escapable_char(text, '.')?;
-                result.push(c);
-                text
-            }
-            Ok((text, out)) => {
-                result.push_str(replace(text, out)?.as_ref());
-                text
-            }
-        }
-    }
-    Ok(result)
-}
-
-/// replaces occurences of :var with the associated string
-/// taking into account escaped ".:", then processing escapes
-pub fn replace_vars(text: &str, variables: &HashMap<String, String>) -> MatchResult<String> {
-    replace_matches(text, match_var_, &(), |input, VarInvocation(ident)| {
-        variables.get(&ident).ok_or_else(|| MatchError::unknown_variable(&ident, input))
-    })
-}
-
-#[test]
 fn test() {
     // in my mind it works like that
     assert_eq!(&"01234"[..2], "01");
 }
 
-#[test]
-fn test_apply_last() {
-    let mut rules = HashMap::new();
-    let ruleDigit = Rule {
-        name: "digit".to_string(),
-        variants: vec![
-            RuleVariant {
-                header: Header::literally("0"), body: None, append: "".to_string(),
-            },
-            RuleVariant {
-                header: Header::literally("1"), body: None, append: "".to_string(),
-            }
-    ]};
-    let ruleDigits = Rule {
-        name: "digits".to_string(),
-        variants: vec![
-            RuleVariant {
-                header: parse_header("::digit").unwrap(),
-                body: None,
-                append: "".to_string(),
-            },
-            RuleVariant {
-                header: parse_header(":d:digit::digits").unwrap(),
-                body: Some(parse_body("Two .times: :d:d").unwrap()),
-                append: "".to_string(),
-            },
-    ]};
-    rules.insert("digit".to_string(), ruleDigit.clone());
-    rules.insert("digits".to_string(), ruleDigits.clone());
-
-    assert_eq!(ruleDigits.apply_last("01110d01", &rules), Ok(("d01", "Two times: 00".to_string())));
-    assert!(ruleDigits.apply_last("abcde", &rules).is_err());
+// first string in returned pair is the skipped text
+pub fn find_statement(input: &Input) -> Option<(&str, &Input)> {
+    input.find("%:").map(|i| (&input[..i], &input[i..]))
 }
 
-pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Result<String, MatchError> {
+pub fn match_statement(input: &Input) -> MatchResult<(&Input, (String, Option<RuleVariant>))> {
+    match match_rule_definition(input) {
+        Ok((input, (name, variant))) => Ok((input, (name, Some(variant)))),
+        Err(def_err) => {
+            match match_file_invocation(input) {
+                Ok((input, name)) => Ok((input, (name.to_string(), None))),
+                Err(file_err) => {
+                    let msg = format!("Expected statement, got {}", error_region(input));
+                    MatchError::compose(msg, vec![def_err, file_err]).tap(Err)
+                }
+            }
+        }
+    }
+}
+
+pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> MatchResult<String> {
     let mut result = String::new();
     let mut input = input.to_string();
 
-    while let Some(start) = input.find("%:") {
+    while let Some((skipped_text, statement_begin)) = find_statement(&input) {
         if appleft == MaybeInf::Finite(0) {
             break;
         }
 
-        let (after_def, (name, variant)) = match_rule_definition(&input[start..])?;
-        let def_length = input[start..].len() - after_def.len();
-        let end = start + def_length;
-
-        // add variant to definitions
-        let name = || name.clone();
-        rules.entry(name()).or_insert(Rule::new(name())).variants.push(variant);
-        let name = name();
-
+        let (statement_end, (name, maybe_variant)) = match_statement(statement_begin)?;
         // all text until the current rule definition remains untouched (because it is between the beginning/a rule definition and a rule definition)
         // so just push it to the result string
-        // whether or not to remove rule definition from processed output ([..end] vs [..start])
-        result.push_str(&input[..end]);
+        result.push_str(skipped_text);
 
-        if !name.is_empty() {
-            // next portion to process is after the current rule definition
-            input = input[end..].to_string();
-        } else {
-            // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
-            let new_input = rules[&name].apply_sequence(&input[end..], rules, &mut appleft)?;
-            input = new_input;
+
+        // add variant to definitions
+        if let Some(variant) = maybe_variant {
+            let name = || name.clone();
+            rules.entry(name()).or_insert(Rule::new(name())).variants.push(variant);
+            let name = name();
+
+            if !name.is_empty() {
+                // next portion to process is after the current rule definition
+                input = statement_end.to_string();
+            } else {
+                // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
+                let new_input = rules[&name].match_sequence(statement_end, rules, &mut appleft)?;
+                input = new_input;
+            }
+        }
+        // invoke file
+        else {
+            // insert file contents before rest of this file
+            let filecontent = dump_file(&name).map_err(|err| MatchError::new(format!("{}", err)))?;
+            input = format!("{}{}", filecontent, input);
         }
 
     }
@@ -227,7 +109,7 @@ fn process_file(target: &str, steps: MaybeInf<u32>) -> Result<(), Box<dyn Error>
 
     let result = process(&buffer, &mut HashMap::new(), steps)?;
 
-    File::create(&target)?.write(result.as_bytes())?;
+    File::create(format!("{}.out", target))?.write(result.as_bytes())?;
 
     Ok(())
 }

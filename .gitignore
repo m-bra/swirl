@@ -6,3 +6,5 @@ Cargo.lock
 perf.data
 
 perf.data.old
+
+.vscode/launch.json
