@@ -1,0 +1,13 @@
+%: line_comment {/::anytextline/}
+%: anytextline {}
+%: anytextline {::not_newline::anychar::anytextline}
+%: not_newline not {/}
+
+%: remove_comments {}
+%: remove_comments {::remove_comments_1::remove_comments}
+%: remove_comments_1 {::anychar}
+%: remove_comments_1 {::line_comment} {}
+
+
+
+%: {::remove_comments_1}{ree}/comment/

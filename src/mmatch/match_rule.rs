@@ -11,10 +11,16 @@ impl Rule {
         for (i, v) in self.variants.iter().rev().enumerate().skip(skip) {
             match v.try_match(input, rules, &self.name, i) {
                 Ok((input, result)) => return Ok((input, result)),
-                Err(err) => candidate_errors.push(err),
+                Err(err) => {
+                    if err.is_fatal() {
+                        return Err(err);
+                    } else {
+                        candidate_errors.push(err);
+                    }
+                },
             }
         }
-        return Err(MatchError::compose(format!("No variant of '{}' matched.", self.name), candidate_errors));
+        return MatchError::compose(format!("No variant of '{}' matched.", self.name), candidate_errors).tap(Err);
     }
 
     pub fn match_last<'a>(&self, input: &'a str, rules: &Rules) -> Result<(&'a str, String), MatchError> {

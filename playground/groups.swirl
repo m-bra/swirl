@@ -1,4 +1,4 @@
-// optimization: grouping all anywhere applies to one
+%: groups_swirl {}
 
 %: 1wh {. }
 %: 1wh {.
@@ -26,21 +26,5 @@
 %: anychar {::1wh}
 %: anychar {::opaquechar}
 
-%: ident {::alnum_}
-%: ident {::alnum_::ident}
-
-%: line_comment {// ::anytextline}
-%: anytextline {::newline}
-%: anytextline {::not_newline::anychar::anytextline}
-%: not_newline not {::newline}
-
-%: remove_comments {}
-%: remove_comments {::remove_comments_1::remove_comments}
-%: remove_comments_1 {::anychar}
-%: remove_comments_1 {::linecomment} {}
-
-%: {::nwh :a:line_comment} {comment(:a)}
-
-// comment
-
-no comment
+%: c_ident {::alnum_}
+%: c_ident {::alnum_::ident}

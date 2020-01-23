@@ -44,16 +44,23 @@ pub fn find_statement(input: &Input) -> Option<(&str, &Input)> {
     input.find("%:").map(|i| (&input[..i], &input[i..]))
 }
 
+use std::fs::File;
+
 pub fn match_statement(input: &Input) -> MatchResult<(&Input, (String, Option<RuleVariant>))> {
     match match_rule_definition(input) {
         Ok((input, (name, variant))) => Ok((input, (name, Some(variant)))),
-        Err(def_err) => {
-            match match_file_invocation(input) {
-                Ok((input, name)) => Ok((input, (name.to_string(), None))),
+        Err(def_err) => match match_file_invocation(input) {
+            Ok((input, name)) => match File::open(name) {
+                Ok(_) => Ok((input, (name.to_string(), None))),
                 Err(file_err) => {
-                    let msg = format!("Expected statement, got {}", error_region(input));
+                    let msg = "Ill-formed rule definition or invocation to unexisting file.";
+                    let file_err = MatchError::new(format!("Error loading file '{}': ", file_err));
                     MatchError::compose(msg, vec![def_err, file_err]).tap(Err)
                 }
+            },
+            Err(file_err) => {
+                let msg = format!("Expected statement, got {}", error_region(input));
+                MatchError::compose(msg, vec![def_err, file_err]).tap(Err)
             }
         }
     }
@@ -92,8 +99,9 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Ma
         // invoke file
         else {
             // insert file contents before rest of this file
-            let filecontent = dump_file(&name).map_err(|err| MatchError::new(format!("{}", err)))?;
-            input = format!("{}{}", filecontent, input);
+            let filecontent = dump_file(&name)
+                .map_err(|err| MatchError::new(format!("Error loading '{}': {}", name, err)))?;
+            input = format!("{}{}", filecontent, statement_end);
         }
 
     }
@@ -115,7 +123,6 @@ fn process_file(target: &str, steps: MaybeInf<u32>) -> Result<(), Box<dyn Error>
 }
 
 use std::io::{self, Read, Write};
-use std::fs::File;
 use std::error::Error;
 
 fn repl() -> Result<(), Box<dyn Error>> {
@@ -163,7 +170,7 @@ fn main() {
     //process(example_input::EXAMPLE, &mut HashMap::new(), MaybeInf::Infinite)?;
     //return Ok(());
 
-    if let Some(arg) = std::env::args().skip(1).next() {
+    let _ = if let Some(arg) = std::env::args().skip(1).next() {
         process_file(&arg, MaybeInf::Infinite)
     } else {
         process_file("input.txt", MaybeInf::Infinite)

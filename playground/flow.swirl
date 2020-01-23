@@ -1,0 +1,12 @@
+/using lean_comments.swirl, reflect.swirl and groups.swirl/
+
+%: inplace_notation {
+    (rule) ::nwh ::inplace_variants
+}
+%: inplace_variants {::inplace_variant}
+%: inplace_variants {::inplace_variant::nwh::inplace_variants}
+%: inplace_variant {
+    (::nwh :header:rule_header ::nwh :body:maybe_rule_body ::nwh)
+} {
+    :header . :body
+}

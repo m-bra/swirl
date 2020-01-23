@@ -1,0 +1,34 @@
+/depends on groups.swirl and lean_comment.swirl/
+
+%: rule_invocation {::swirl_rule_invocation}
+%: swirl_rule_invocation {
+    .: :result:ident .: :rule:ident
+}
+
+%: var_invocation {::swirl_var_invocation}
+%: swirl_var_invocation { .: :name:ident }
+
+%: not_part_end not {.}}
+
+%: rule_header {::swirl_rule_header}
+%: swirl_rule_header {{::rule_header_inner.}}
+%: rule_header_inner {}
+%: rule_header_inner {::not_part_end::rule_header_inner_1::rule_header_inner}
+%: rule_header_inner_1 {::anychar}
+%: rule_header_inner_1 {::rule_invocation}
+
+%: rule_body {::swirl_rule_body}
+%: swirl_rule_body {{::rule_body_inner.}}
+%: rule_body_inner {}
+%: rule_body_inner {::not_part_end::rule_body_inner_1::rule_body_inner}
+%: rule_body_inner_1 {::anychar}
+%: rule_body_inner_1 {::var_invocation}
+
+%: maybe_rule_body {}
+%: maybe_rule_body {::rule_body}
+
+%: maybe_not {}
+%: maybe_not {not}
+
+%: rule {::swirl_rule}
+%: swirl_rule {%.: ::nwh ::ident ::nwh ::maybe_not ::nwh ::rule_header ::nwh ::rule_body}
