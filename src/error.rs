@@ -2,6 +2,7 @@
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct MatchError {
+    fatal: bool,
     error_type: ErrorType,
     backtrace: Vec<String>
 }
@@ -12,12 +13,15 @@ pub enum ErrorType {
 }
 
 impl MatchError {
+    pub fn is_fatal(&self) -> bool {self.fatal}
+
     pub fn new(msg: impl AsRef<str>) -> MatchError {
         MatchError { 
             error_type: ErrorType::Generic {
                 msg: msg.as_ref().to_string(),
                 subErrors: vec![]
             },
+            fatal: false,
             backtrace: vec![]
         }
     }
@@ -28,6 +32,7 @@ impl MatchError {
                 msg: msg.as_ref().to_string(),
                 subErrors: subErrors,
             },
+            fatal: false,
             backtrace: vec![]
         }
     }
@@ -53,6 +58,7 @@ impl MatchError {
                 msg: format!("Expected {}, got {}", expected, error_region(input)),
                 subErrors: vec![],
             },
+            fatal: false,
             backtrace: vec![],
         }
     }
@@ -63,6 +69,7 @@ impl MatchError {
                 msg: format!("Unknown variable '{}': {}", var_ident, error_region(input)),
                 subErrors: vec![],
             },
+            fatal: true,
             backtrace: vec![],
         }
     }
@@ -73,6 +80,7 @@ impl MatchError {
                 msg: format!("Unknown rule: '{}': {}", rule_ident, error_region(input)),
                 subErrors: vec![],
             },
+            fatal: true,
             backtrace: vec![],
         }
     }

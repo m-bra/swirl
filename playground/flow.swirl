@@ -1,0 +1,19 @@
+/using lean_comments.swirl, reflect.swirl, move.swirl and groups.swirl/
+
+%: inplace_notation {
+    (rule) ::nwh :variants:inplace_variants
+} {
+    :variants
+}
+%: inplace_variants {::inplace_variant}
+%: inplace_variants {::inplace_variant::nwh::inplace_variants}
+%: inplace_variant {
+    (::nwh :header:rule_header ::nwh :body:maybe_rule_body ::nwh)
+}
+
+%: csdup {
+    ::inplace_notation
+} {
+    :name.
+    A(:name)
+}

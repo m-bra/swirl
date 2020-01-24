@@ -7,6 +7,9 @@ pub fn firstline<'a>(string: &str) -> &str {
     _firstline(string)
 }
 
+mod dump_file;
+pub use dump_file::*;
+
 mod tap;
 pub use tap::*;
 
@@ -37,4 +40,3 @@ impl<T: SubAssign> SubAssign<T> for MaybeInf<T> where T: Eq {
         }
     }
 }
-

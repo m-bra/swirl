@@ -32,7 +32,7 @@
 %: ident {::alnum_}
 %: ident {::alnum_::ident}
 
-// generators are rules that turn a %!: rule into a %: rule
+// generators are rules that turn a %!: rule into a % : rule
 // %!: rules can have cooler syntax
 
 // generate rule that matches a string until `end` (if it has not been escaped with `esc`)

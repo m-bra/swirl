@@ -1,0 +1,12 @@
+/depends on lean_comment.swirl, groups.swirl/
+
+%: tuple_get_major {::index_number::nwh. of::nwh. ::tuple_elements}
+
+%: tuple_get {0th::nwh. of::nwh. :r:tuple_element::nwh ::tuple_elements} {:r}
+%: tuple_get {1th::nwh. of::nwh. :r:tuple_element::nwh ::tuple_elements} {:r}
+%: tuple_elements {}
+%: tuple_elements {::tuple_element::nwh::tuple_elements}
+%: tuple_element {(::non_brace_text)}
+%: non_brace_text {}
+%: non_brace_text {::not_closing_brace::anychar::non_brace_text}
+%: not_closing_brace {)}

@@ -1,3 +1,5 @@
+
+pub static EXAMPLE: &str = r####"
 // 1 whitespace
 %: 1wh { }
 %: 1wh {
@@ -56,7 +58,7 @@
 }
 
 // idea how to implement namespaces with static contracts:
-// a rule that wants to be the only one to use the namespace abc_** 
+// a rule that wants to be the only one to use the namespace abc_**
 // can formulate a static contract requiring no identifier to have this form.
 
 // repeat innerRule 0 or more times
@@ -96,48 +98,18 @@
     %.: {.:g.::ruleName._generable.} {.:g.}
 }
 
-// 
-    %: genApply_1generable {:x:anychar} {:x}
-    %: genApply_1generable {:r:genApply} {:r}
-    %: genApply_generable {}
-    %: genApply_generable {:r:genApply_1generable:g:genApply_generable} {:r:g}
-    %: {:g:genApply_generable} {:g}
-
-%: 1generable {:x:anychar} 
+// %!: apply anywhere genApply
+%: 1generable {:x:anychar}
 %: 1generable {:r:genApply}
 %: generable {}
-%: generable {:r:1generable:g:generable} 
+%: generable {:r:1generable:g:generable}
 %: {:g:generable}
 
 // infinite loop occurs at this chunk of text
-
-    %: genRuleEndText_1generable {:x:anychar} {:x}
-    %: genRuleEndText_1generable {:r:genRuleEndText} {:r}
-    %: genRuleEndText_generable {}
-    %: genRuleEndText_generable {:r:genRuleEndText_1generable:g:genRuleEndText_generable} {:r:g}
-    %: {:g:genRuleEndText_generable} {:g}
-
-
-    %: genRuleMaybe_1generable {:x:anychar} {:x}
-    %: genRuleMaybe_1generable {:r:genRuleMaybe} {:r}
-    %: genRuleMaybe_generable {}
-    %: genRuleMaybe_generable {:r:genRuleMaybe_1generable:g:genRuleMaybe_generable} {:r:g}
-    %: {:g:genRuleMaybe_generable} {:g}
-
-
-    %: genRulePlus_1generable {:x:anychar} {:x}
-    %: genRulePlus_1generable {:r:genRulePlus} {:r}
-    %: genRulePlus_generable {}
-    %: genRulePlus_generable {:r:genRulePlus_1generable:g:genRulePlus_generable} {:r:g}
-    %: {:g:genRulePlus_generable} {:g}
-
-
-    %: genRuleStar_1generable {:x:anychar} {:x}
-    %: genRuleStar_1generable {:r:genRuleStar} {:r}
-    %: genRuleStar_generable {}
-    %: genRuleStar_generable {:r:genRuleStar_1generable:g:genRuleStar_generable} {:r:g}
-    %: {:g:genRuleStar_generable} {:g}
-
+%!: apply anywhere genRuleEndText
+%!: apply anywhere genRuleMaybe
+%!: apply anywhere genRulePlus
+%!: apply anywhere genRuleStar
 
 // function syntax: f(any text that does not contain unescaped .))
 // function input will be unescaped content between '(' and ')'
@@ -148,6 +120,7 @@
 %/: {.;::nwh:text:braced_esctext} {:text};
 
 %!: manynumbers=09*
-    
+
 
 %: {:t:manynumbers} {success. .{:t.}}
+"####;
