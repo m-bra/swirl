@@ -54,7 +54,7 @@ pub fn match_statement(input: &Input) -> MatchResult<(&Input, (String, Option<Ru
                 Ok(_) => Ok((input, (name.to_string(), None))),
                 Err(file_err) => {
                     let msg = "Ill-formed rule definition or invocation to unexisting file.";
-                    let file_err = MatchError::new(format!("Error loading file '{}': ", file_err));
+                    let file_err = MatchError::new(format!("Error loading file '{}': {} ", name, file_err));
                     MatchError::compose(msg, vec![def_err, file_err]).tap(Err)
                 }
             },

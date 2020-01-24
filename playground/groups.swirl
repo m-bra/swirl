@@ -1,5 +1,6 @@
 %: groups_swirl {}
 
+
 %: 1wh {. }
 %: 1wh {.
 }
@@ -26,5 +27,13 @@
 %: anychar {::1wh}
 %: anychar {::opaquechar}
 
+%: uint {::09}
+%: uint {::09::uint}
+
+%: index_number {::uint.th} {:}
+%: index_number {first} {1}
+%: index_number {second} {2}
+%: index_number {third} {3}
+
 %: c_ident {::alnum_}
-%: c_ident {::alnum_::ident}
+%: c_ident {::alnum_::c_ident}

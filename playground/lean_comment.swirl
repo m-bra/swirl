@@ -10,4 +10,4 @@
 
 
 
-%: {::remove_comments_1}{ree}/comment/
+%: {::remove_comments}

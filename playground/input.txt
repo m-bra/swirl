@@ -1,7 +1,5 @@
-%: groups.swirl
-%: lean_comment.swirl
 
-%*: {:c:az} {a letter :c}a
 
-// this is visible
-/ this is not visible /
+%: {hello} {byeeee}hello
+
+%: {lol} {hel}lollo
