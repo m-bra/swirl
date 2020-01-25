@@ -54,11 +54,11 @@ fn test_match_last() {
         variants: vec![
             RuleVariant {
                 header: Header::literally("0"), body: None, append: "".to_string(),
-                header_negated: false,
+                header_negated: false, once: false,
             },
             RuleVariant {
                 header: Header::literally("1"), body: None, append: "".to_string(),
-                header_negated: false,
+                header_negated: false,once: false,
             }
     ]};
     let ruleDigits = Rule {
@@ -66,13 +66,13 @@ fn test_match_last() {
         variants: vec![
             RuleVariant {
                 header: parse_header("::digit").unwrap(),
-                header_negated: false,
+                header_negated: false, once: false,
                 body: None,
                 append: "".to_string(),
             },
             RuleVariant {
                 header: parse_header(":d:digit::digits").unwrap(),
-                header_negated: false,
+                header_negated: false, once: false,
                 body: Some(parse_body("Two .times: :d:d").unwrap()),
                 append: "".to_string(),
             },

@@ -1,7 +1,11 @@
+%: (once) {::groups_swirl}
+%: lean_comment_swirl {}
+%: lean_comments_swirl {}
+
 %: line_comment {/::anytextline/}
 %: anytextline {}
-%: anytextline {::not_newline::anychar::anytextline}
-%: not_newline not {/}
+%: anytextline {::not_slash::anychar::anytextline}
+%: not_slash (not) {/}
 
 %: remove_comments {}
 %: remove_comments {::remove_comments_1::remove_comments}

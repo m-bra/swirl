@@ -1,4 +1,6 @@
 /depends on groups.swirl and lean_comment.swirl/
+%: (once) {::groups_swirl::lean_comment_swirl}
+%: reflect_swirl {}
 
 %: rule_invocation {::swirl_rule_invocation}
 %: swirl_rule_invocation {
@@ -8,7 +10,7 @@
 %: var_invocation {::swirl_var_invocation}
 %: swirl_var_invocation { .: :name:ident }
 
-%: not_part_end not {.}}
+%: not_part_end (not) {.}}
 
 %: rule_header {::swirl_rule_header}
 %: swirl_rule_header {{::rule_header_inner.}}

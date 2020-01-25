@@ -23,7 +23,7 @@ fn test_match_rule_def() {
         match_rule_definition("%:  name1{..::rule.}}19"),
         Ok(("19", ("name1".into(), RuleVariant {
             header: header(),
-            header_negated: false,
+            header_negated: false, once: false,
             body: None,
             append: "".into(),
         })))
@@ -33,7 +33,7 @@ fn test_match_rule_def() {
         match_rule_definition("%:  name1{..::rule.}}    {:var.::othervar}19"),
         Ok(("19", ("name1".into(), RuleVariant {
             header: header(),
-            header_negated: false,
+            header_negated: false, once: false,
             body: Some(body),//once told me
             append: "".into(),
         })))
@@ -41,6 +41,8 @@ fn test_match_rule_def() {
 }
 
 use std::char;
+
+
 
 pub fn match_file_invocation<'a>(input: &'a Input) -> MatchResult<(&'a Input, &'a str)> {
     if match_rule_definition(input).is_ok() {
@@ -69,15 +71,38 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
     // ruleName
     let input = match_whitespaces(input)?;
     let (input, rule_name) = match_ident(input).unwrap_or((input, ""));
-    let rule_name = rule_name.into();
-    let input = match_whitespaces(input)?;
+    let rule_name: String = rule_name.into();
+    let mut input = match_whitespaces(input)?;
 
-    // maybe not
-    let (input, negated) = if input.starts_with("not") {
-        (match_whitespaces(&input[3..])?, true)
-    } else {
-        (input, false)
-    };
+    // flags
+    let mut negated = false;
+    let mut once = false;
+    let mut some_flag_matched = true;
+    while some_flag_matched {
+        some_flag_matched = false;
+
+        input = match match_maybe_str(input, "(not)") {
+            (input, true) => {
+                negated = true;
+                some_flag_matched = true;
+                input
+            } 
+            (input, false) => input
+        }.tap(match_whitespaces)?;
+
+        input = match match_maybe_str(input, "(once)") {
+            (input, true) => {
+                once = true;
+                some_flag_matched = true;
+                input
+            } 
+            (input, false) => input
+        }.tap(match_whitespaces)?;
+    }
+
+    if once && !rule_name.is_empty() {
+        return MatchError::new("Can only use flag (once) on unnamed rules").tap(Err);
+    }
 
     // {header with :rule:invocation.s} {body with :var.s}
     let header_start = input;
@@ -87,6 +112,6 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
     let (input, body) = match_rule_part(input, match_var)?;
 
     Ok (
-        (input, (rule_name, RuleVariant {header: header, header_negated: negated, body: body, append: String::new()}))
+        (input, (rule_name, RuleVariant {once, header: header, header_negated: negated, body: body, append: String::new()}))
     )
 }

@@ -1,5 +1,4 @@
+%: lean_comment.swirl
+%: tuple.swirl
 
-
-%: {hello} {byeeee}hello
-
-%: {lol} {hel}lollo
+1 of (hello) (bye)

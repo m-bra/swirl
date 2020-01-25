@@ -1,5 +1,7 @@
+No variant of 'line_comment' matched.
+candidates: 1
+  Expected /, got hello/
+  candidates: 0
 
 
-byeeee
-
-byeeee
+ at %:  { ::line_comment  } on '/hello/'

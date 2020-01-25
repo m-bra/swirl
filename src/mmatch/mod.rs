@@ -45,6 +45,16 @@ pub fn match_str(input: &str, expect: impl AsRef<str>) -> MatchResult<&str> {
     }
 }
 
+pub fn match_maybe_str(input: &str, expect: impl AsRef<str>) -> (&str, bool) {
+    let expect = expect.as_ref();
+    if input.starts_with(expect) {
+        (&input[expect.len()..], true)
+    } else {
+        (input, false)
+    }
+}
+
+
 pub fn match_ident<'a>(input: &'a Input) -> MatchResult<(&'a Input, &str)> {
     // todo: look at asm
     let len = input.chars().take_while(|c| c.is_alphabetic() || c.is_digit(10) || *c == '_').count();

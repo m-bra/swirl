@@ -1,12 +1,25 @@
-/depends on lean_comment.swirl, groups.swirl/
+%: (once) {::groups_swirl::lean_comment_swirl}
+%: tuple_swirl {}
 
-%: tuple_get_major {::index_number::nwh. of::nwh. ::tuple_elements}
+%: tuple_get {:n:index_number::nwh. of::nwh. :els:tuple_elements} {
+    %: (once) {. ::_tuple_get.} :n of :els
+}
 
-%: tuple_get {0th::nwh. of::nwh. :r:tuple_element::nwh ::tuple_elements} {:r}
-%: tuple_get {1th::nwh. of::nwh. :r:tuple_element::nwh ::tuple_elements} {:r}
+%: _tuple_get {0. of. :r:tuple_element::nwh ::tuple_elements} {:r}
+%: _tuple_get {1. of. ::tuple_element::nwh :r:tuple_element::nwh ::tuple_elements} {:r}
+
 %: tuple_elements {}
 %: tuple_elements {::tuple_element::nwh::tuple_elements}
 %: tuple_element {(::non_brace_text)}
+
 %: non_brace_text {}
 %: non_brace_text {::not_closing_brace::anychar::non_brace_text}
 %: not_closing_brace {)}
+
+
+%: apply_tuple_gets {}
+%: apply_tuple_gets {::apply_tuple_get::apply_tuple_gets}
+%: apply_tuple_get {::anychar}
+%: apply_tuple_get {::tuple_get}
+
+%: /(syntax)/ {::apply_tuple_gets}

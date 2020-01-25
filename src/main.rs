@@ -83,6 +83,7 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Ma
 
         // add variant to definitions
         if let Some(variant) = maybe_variant {
+            let once = variant.once;
             let name = || name.clone();
             rules.entry(name()).or_insert(Rule::new(name())).variants.push(variant);
             let name = name();
@@ -93,6 +94,10 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Ma
             } else {
                 // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
                 let new_input = rules[&name].match_sequence(statement_end, rules, &mut appleft)?;
+                // if this rule was just to be applied once, remove from definitions
+                if once {
+                    rules.get_mut(&name).unwrap().variants.pop().unwrap();
+                }
                 input = new_input;
             }
         }
@@ -165,17 +170,14 @@ fn repl() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn main() {
-
-    //process(example_input::EXAMPLE, &mut HashMap::new(), MaybeInf::Infinite)?;
-    //return Ok(());
-
-    let _ = if let Some(arg) = std::env::args().skip(1).next() {
-        process_file(&arg, MaybeInf::Infinite)
-    } else {
-        process_file("input.txt", MaybeInf::Infinite)
-    }
-        .map_err(|err| println!("{}", err));
+fn main() -> Result<(), ()>  {
+    let mut buffer = String::new();
+    io::stdin().read_to_string(&mut buffer)
+        .map_err(|e| eprintln!("{}", e))?;
+    let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite)
+        .map_err(|e| eprintln!("{}", e))?;
+    println!("{}", result);
+    Ok(())
 }
 
 #[test]

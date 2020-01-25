@@ -12,7 +12,9 @@ fn match_positive_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Ru
         for &RuleInvocation(ref var, ref rule) in invocs {
             input = {
                 let rule = rules.get(rule)
-                    .ok_or_else(|| MatchError::unknown_rule(rule, "<>"))?;
+                    .ok_or_else(|| {
+                        panic!("unknown rule {}", rule)//MatchError::unknown_rule(rule, "<>")
+                    })?;
                 let (input, result) = rule.match_last(input, rules)?;
 
                 if !var.is_empty() {
@@ -111,12 +113,13 @@ fn _test_match_rule_head() {
             RuleVariant {
                 header: Header::literally("0"),
                 header_negated: false,
+                once: false,
                 body: None,
                 append: "".to_string()
             },
             RuleVariant {
                 header: Header::literally("1"),
-                header_negated: false,
+                header_negated: false, once: false,
                 body: None,
                 append: "".to_string(),
             }
