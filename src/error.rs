@@ -10,10 +10,17 @@ pub struct MatchError {
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub enum ErrorType {
     Generic {msg: String, subErrors: Vec<MatchError>},
+    UnknownRule {msg: String}
 }
 
 impl MatchError {
     pub fn is_fatal(&self) -> bool {self.fatal}
+    pub fn is_unknown_rule(&self) -> bool {
+        match self.error_type {
+            ErrorType::UnknownRule {msg: _} => true,
+            _ => false
+        }
+    }
 
     pub fn new(msg: impl AsRef<str>) -> MatchError {
         MatchError { 
@@ -48,6 +55,9 @@ impl MatchError {
                 }).collect::<Vec<_>>().join("");
                 format!("{}{}\n{}candidates: {}\n{}\n", indent, msg, indent, subErrors.len(), subs)
             }
+            ErrorType::UnknownRule {msg} => {
+                format!("{}{}\n", indent, msg)
+            }
         }
         
     }
@@ -55,7 +65,7 @@ impl MatchError {
     pub fn expected(expected: &str, input: &str) -> MatchError {
         MatchError {
             error_type: ErrorType::Generic {
-                msg: format!("Expected {}, got {}", expected, error_region(input)),
+                msg: format!("Expected '{}', got '{}'", expected, error_region(input)),
                 subErrors: vec![],
             },
             fatal: false,
@@ -66,7 +76,7 @@ impl MatchError {
     pub fn unknown_variable(var_ident: &str, input: &str) -> MatchError {
         MatchError {
             error_type: ErrorType::Generic {
-                msg: format!("Unknown variable '{}': {}", var_ident, error_region(input)),
+                msg: format!("Unknown variable '{}': '{}'", var_ident, error_region(input)),
                 subErrors: vec![],
             },
             fatal: true,
@@ -76,9 +86,8 @@ impl MatchError {
 
     pub fn unknown_rule(rule_ident: &str, input: &str) -> MatchError {
         MatchError {
-            error_type: ErrorType::Generic {
-                msg: format!("Unknown rule: '{}': {}", rule_ident, error_region(input)),
-                subErrors: vec![],
+            error_type: ErrorType::UnknownRule {
+                msg: format!("Unknown rule: '{}': '{}'", rule_ident, error_region(input)),
             },
             fatal: true,
             backtrace: vec![],

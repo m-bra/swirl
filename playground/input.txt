@@ -1,4 +1,0 @@
-%: lean_comment.swirl
-%: tuple.swirl
-
-1 of (hello) (bye)

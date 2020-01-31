@@ -1,0 +1,31 @@
+%: {::lean_comment_swirl}
+
+/uniq.swirl uses its namespace uniq_*/
+%: process_uniq_loop {}
+%: process_uniq_loop {::process_uniq::process_uniq_loop}
+
+%: process_uniq {::anychar}
+%: process_uniq {UNIQ {' '} :ident:c_ident} {{'
+    %: (once) {::uniq_register_'} :ident {'}
+    {
+       % : uniq_fail {} {'}:ident{'}
+    }
+    (catch unknown rule) {
+       % : uniq_register_'}:ident{' {}
+    }
+'}}
+
+%: uniq_check_fail {:failed_target:uniq_fail} 
+{
+    ':failed_target' is not unique.
+}
+(catch unknown rule) {
+    everything went just all-fine.
+}
+
+%: /syntax/ {::process_uniq_loop::uniq_check_fail}
+
+UNIQ meme
+UNIQ dup
+UNIQ edge
+UNIQ dup

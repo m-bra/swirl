@@ -13,7 +13,7 @@ fn match_positive_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Ru
             input = {
                 let rule = rules.get(rule)
                     .ok_or_else(|| {
-                        panic!("unknown rule {}", rule)//MatchError::unknown_rule(rule, "<>")
+                        MatchError::unknown_rule(rule, "<>")
                     })?;
                 let (input, result) = rule.match_last(input, rules)?;
 
@@ -58,7 +58,7 @@ pub fn match_rule_head<'a>(input: &'a Input, rule_head: &Header, negated: bool, 
 
 #[test]
 fn test_match_rule_part() {
-    let (_, rule_head) = match_rule_part("{I have.::n1:number:n2:number.:apples......::number}", match_invocation).unwrap();
+    let (_, rule_head) = match_rule_part_def("{I have.::n1:number:n2:number.:apples......::number}", match_invocation).unwrap();
     let rule_head = rule_head.unwrap();
 
     assert_eq!(rule_head, {
@@ -72,11 +72,11 @@ fn test_match_rule_part() {
     })
 }
 
-/// matches a rule header (including {}) or a rule body,
+/// matches a rule header definition (including {}) or a rule body definition,
 /// where `Invocation` is either RuleInvocation or VarInvocation
 /// and `match_invocation` either match_invocation or match_var
 /// if input does not start with '{', no error is returned but just None.
-pub fn match_rule_part<'a, Invocation: Clone>(input: &'a Input, mut match_invocation: impl FnMut(&'a Input) -> MatchResult<(&'a Input, Invocation)>)
+pub fn match_rule_part_def<'a, Invocation: Clone>(input: &'a Input, mut match_invocation: impl FnMut(&'a Input) -> MatchResult<(&'a Input, Invocation)>)
         -> MatchResult<(&'a Input, Option<RulePart<Invocation>>)> {
     let mut rulepart = RulePart::new();
 
@@ -85,18 +85,30 @@ pub fn match_rule_part<'a, Invocation: Clone>(input: &'a Input, mut match_invoca
         Err(_) => return Ok((input, None)),
     };
 
+    let mut level = 1;
+
     loop { input =
         if let Ok((input, invo)) = match_invocation(input) {
             rulepart.add_invoc(invo);
             input
-        } else if let Some('}') = input.chars().next() {
-            break;
         } else {
-            let is_unescaped = input.chars().next().map(|c| c != ESCAPE_CHAR).unwrap_or(false);
-            let (input, c) = match_escapable_char(input, ESCAPE_CHAR)?;
-            if !(is_unescaped && c.is_whitespace()) {
-                rulepart.add_char(c);
+            let (input, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN, ESCAPE_BRACE_CLOSE)?;
+
+            if !is_escaped {
+                if s == "{" {
+                    level += 1;
+                } else if s == "}" {
+                    level -= 1;
+                    if level == 0 {
+                        break;
+                    }
+                }
             }
+
+            if !s.chars().all(char::is_whitespace) || is_escaped {
+                rulepart.add_str(s);
+            }
+            
             input
         }
     };
@@ -110,19 +122,14 @@ fn _test_match_rule_head() {
     rules.insert("number".to_string(), Rule {
         name: "number".to_string(),
         variants: vec![
-            RuleVariant {
-                header: Header::literally("0"),
-                header_negated: false,
-                once: false,
-                body: None,
-                append: "".to_string()
-            },
-            RuleVariant {
-                header: Header::literally("1"),
-                header_negated: false, once: false,
-                body: None,
-                append: "".to_string(),
-            }
+            RuleVariant::new(
+                Header::literally("0"),
+                None
+            ),
+            RuleVariant::new(
+                Header::literally("1"),
+                None
+            )
         ]
     });
     let mut results = HashMap::new();
@@ -130,7 +137,7 @@ fn _test_match_rule_head() {
     results.insert("n2".to_string(), "0".to_string());
     let anon_results = vec!["1".to_string()];
 
-    let (_, rule_head) = match_rule_part("{I. have.::n1:number:n2:number.:apples......::number}", match_invocation).unwrap();
+    let (_, rule_head) = match_rule_part_def("{I. have.::n1:number:n2:number.:apples......::number}", match_invocation).unwrap();
     let rule_head = rule_head.unwrap();
 
     assert_eq!(

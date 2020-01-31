@@ -12,11 +12,7 @@ impl Rule {
             match v.try_match(input, rules, &self.name, i) {
                 Ok((input, result)) => return Ok((input, result)),
                 Err(err) => {
-                    if err.is_fatal() {
-                        return Err(err);
-                    } else {
-                        candidate_errors.push(err);
-                    }
+                    candidate_errors.push(err);
                 },
             }
         }
@@ -52,30 +48,23 @@ fn test_match_last() {
     let ruleDigit = Rule {
         name: "digit".to_string(),
         variants: vec![
-            RuleVariant {
-                header: Header::literally("0"), body: None, append: "".to_string(),
-                header_negated: false, once: false,
-            },
-            RuleVariant {
-                header: Header::literally("1"), body: None, append: "".to_string(),
-                header_negated: false,once: false,
-            }
+            RuleVariant::new(
+                Header::literally("0"), None,
+            ),
+            RuleVariant::new(
+                Header::literally("1"), None,
+            )
     ]};
     let ruleDigits = Rule {
         name: "digits".to_string(),
         variants: vec![
-            RuleVariant {
-                header: parse_header("::digit").unwrap(),
-                header_negated: false, once: false,
-                body: None,
-                append: "".to_string(),
-            },
-            RuleVariant {
-                header: parse_header(":d:digit::digits").unwrap(),
-                header_negated: false, once: false,
-                body: Some(parse_body("Two .times: :d:d").unwrap()),
-                append: "".to_string(),
-            },
+            RuleVariant::new(
+                parse_header("::digit").unwrap(), None
+            ),
+            RuleVariant::new(
+                parse_header(":d:digit::digits").unwrap(),
+                Some(parse_body("Two .times: :d:d").unwrap()),
+            ),
     ]};
     rules.insert("digit".to_string(), ruleDigit.clone());
     rules.insert("digits".to_string(), ruleDigits.clone());

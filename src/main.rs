@@ -18,7 +18,8 @@ mod example_input;
 #[macro_use]
 extern crate lazy_static;
 
-pub const ESCAPE_CHAR: char = '.';
+pub const ESCAPE_BRACE_OPEN: &str = "{'";
+pub const ESCAPE_BRACE_CLOSE: &str = "'}";
 pub const RULE_INVOCATION_CHAR: char = ':';
 
 // todo: idea:
@@ -66,7 +67,7 @@ pub fn match_statement(input: &Input) -> MatchResult<(&Input, (String, Option<Ru
     }
 }
 
-pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> MatchResult<String> {
+pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remove_defs: bool) -> MatchResult<String> {
     let mut result = String::new();
     let mut input = input.to_string();
 
@@ -79,11 +80,13 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Ma
         // all text until the current rule definition remains untouched (because it is between the beginning/a rule definition and a rule definition)
         // so just push it to the result string
         result.push_str(skipped_text);
-
+        if !remove_defs {
+            result.push_str(&statement_begin[..(statement_begin.len() - statement_end.len())]);
+        }
 
         // add variant to definitions
         if let Some(variant) = maybe_variant {
-            let once = variant.once;
+            let once = variant.flags.contains("once");
             let name = || name.clone();
             rules.entry(name()).or_insert(Rule::new(name())).variants.push(variant);
             let name = name();
@@ -116,11 +119,11 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>) -> Ma
     Ok(result)
 }
 
-fn process_file(target: &str, steps: MaybeInf<u32>) -> Result<(), Box<dyn Error>> {
+fn process_file(target: &str, steps: MaybeInf<u32>, remove_defs: bool) -> Result<(), Box<dyn Error>> {
     let mut buffer = String::new();
     File::open(&target)?.read_to_string(&mut buffer)?;
 
-    let result = process(&buffer, &mut HashMap::new(), steps)?;
+    let result = process(&buffer, &mut HashMap::new(), steps, remove_defs)?;
 
     File::create(format!("{}.out", target))?.write(result.as_bytes())?;
 
@@ -154,9 +157,9 @@ fn repl() -> Result<(), Box<dyn Error>> {
             } else if userline[0] == "s_unsupported" || userline[0] == "step_unsupported" {
                 let step_count: &str = userline.get(1).unwrap_or(&"1");
                 let step_count: u32 = step_count.parse().unwrap();
-                process_file(&target, MaybeInf::Finite(step_count))?;
+                process_file(&target, MaybeInf::Finite(step_count), false)?;
             } else if userline[0] == "r" || userline[0] == "run" {
-                process_file(&target, MaybeInf::Infinite)?;
+                process_file(&target, MaybeInf::Infinite, true)?;
             } else {
                 println!("unknown command '{}'", userline[0]);
             }
@@ -174,7 +177,7 @@ fn main() -> Result<(), ()>  {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer)
         .map_err(|e| eprintln!("{}", e))?;
-    let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite)
+    let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite, true)
         .map_err(|e| eprintln!("{}", e))?;
     println!("{}", result);
     Ok(())
@@ -186,7 +189,7 @@ fn test_input() {
         let mut buffer = String::new();
         File::open("testinput.txt")?.read_to_string(&mut buffer)?;
 
-        let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite)?;
+        let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite, true)?;
         let last_line = result.lines().last().unwrap();
         assert_eq!(last_line, "success: testescape.)");
 

@@ -5,7 +5,9 @@ impl RuleVariant {
     /// try matching one rule variant and resolve the result text
     /// return the remaining unconsumed input and the replacement string
     /// variant_index is 0 if it is the last variant (which is the first to be applied)
-    pub fn try_match<'a>(&self, input: &'a str, rules: &Rules, name: impl AsRef<str>, variant_index: usize) -> MatchResult<(&'a str, String)> { (|| {
+    pub fn try_match<'a>(&self, input: &'a str, rules: &Rules, name: impl AsRef<str>, variant_index: usize) -> MatchResult<(&'a str, String)> { 
+        (|| {
+
         let name = name.as_ref();
 
         let optimize_tail_recursion = {
@@ -17,16 +19,27 @@ impl RuleVariant {
         let body = self.body.clone().unwrap_or_else(|| self.header.as_body());
 
         if !optimize_tail_recursion {
-            let header = &self.header;
-            let (input, (results, anon_results)) = match_rule_head(input, header, self.header_negated, rules)?;
-            if self.header_negated {
-                (input, String::new())
-            } else {
-                (input, body.bind_vars(&results, &anon_results)?)
+            match match_rule_head(input, &self.header, self.header_negated(), rules) {
+                Ok((input, (results, anon_results))) => {
+                    if self.header_negated() {
+                        (input, String::new())
+                    } else {
+                        (input, body.bind_vars(&results, &anon_results)?)
+                    }
+                },
+                Err(ref err) if err.is_unknown_rule() && self.catch_unknown_rule.is_some() => {
+                    let catch_body = self.catch_unknown_rule.as_ref().unwrap();
+                    (input, catch_body.bind_vars(&HashMap::new(), &Vec::new())?)
+                },
+                Err(err) => return Err(err)
             }
         } else {
 
-            if self.header_negated {
+            if self.header_negated() {
+                unimplemented!()
+            }
+
+            if self.catch_unknown_rule.is_some() {
                 unimplemented!()
             }
 
@@ -37,7 +50,7 @@ impl RuleVariant {
                 let mut frame_stack = Vec::new(); // each frame contains the input before matching its rule
                 let mut frame_result = Ok(("", (HashMap::new(), Vec::new()))); // result of current frame
                 while {
-                    frame_result = match_rule_head(current_input, header, self.header_negated, rules);
+                    frame_result = match_rule_head(current_input, header, self.header_negated(), rules);
                     frame_result.is_ok()
                 } {
                     let (input, results) = frame_result.unwrap();

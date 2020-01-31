@@ -102,12 +102,12 @@ pub fn match_invocation<'a>(input: &'a Input) -> MatchResult<(&'a Input, RuleInv
 #[test]
 pub fn test_match_escapable_char() {
     assert_eq!(
-        match_escapable_char("..text", '.'),
+        match_escapable_char("{.}text", '{', '}'),
         Ok(("text", '.'))
     );
     assert_eq!(
-        match_escapable_char("abtext", 'a'),
-        Ok(("text", 'b'))
+        match_escapable_char("abtext", 'a', 't'),
+        Ok(("ext", 'b'))
     );
     assert_eq!(
         match_escapable_char("P,text", ','),
@@ -125,7 +125,7 @@ pub fn test_match_escapable_char() {
     );
 }
 
-pub fn match_escapable_char(input: &Input, escape: char) -> MatchResult<(&Input, char)> {
+pub fn match_escapable_char_old(input: &Input, escape: char) -> MatchResult<(&Input, char)> {
     let mut input = input.chars();
     let c1 = input.next()
         .ok_or_else(|| MatchError::expected("some char", input.as_str()))?;
@@ -137,6 +137,64 @@ pub fn match_escapable_char(input: &Input, escape: char) -> MatchResult<(&Input,
     } else {
         (input.as_str(), c1)
     }.tap(Ok)
+}
+
+// finds the matching closing brace to the opening brace that is located at input[-1]
+fn find_matching_brace<'a>(input: &'a Input, open: &str, close: &str) -> MatchResult<(&'a Input, &'a str)> {
+    // level is now at 1
+    // return the closing brace that brings level back to 0
+    let mut level = 1;
+
+    let input_start = input;
+    let mut input = input;
+    let brace_error = || MatchError::expected(&format!("Closing brace: '{}'", close), input_start);
+
+    let get_next_brace = |input: &Input| {
+        let s = input.matches(open).next();
+        let t = input.matches(close).next();
+        match (s, t) {
+            (Some(s), Some(t)) if s.len() > t.len() => Some(s),
+            (_, Some(t)) => Some(t),
+            (Some(s), None) => Some(s),
+            (None, None) => None
+        }
+        .map(|s| s.as_ptr() as usize - input.as_ptr() as usize)
+    };
+
+    loop {
+        let i = get_next_brace(input).ok_or_else(brace_error)?;
+        input = &input[i..];
+
+        if input.starts_with(open) {
+            level += 1;
+        } else {
+            level -= 1;
+            if level == 0 {
+                let length = input_start.len() - input.len();
+                return Ok((input, &input_start[..length]));
+            }
+        }
+    }
+}
+
+// either matches one character, or escaped text that is enclosed in the given strings.
+// the boolean returns whether the string was escaped or not
+pub fn match_escapable_char<'a>(input: &'a Input, open: &str, close: &str) -> MatchResult<(&'a Input, &'a str, bool)> {
+    let open_l = open.len();
+    let close_l = close.len();
+    if input.starts_with(open) {
+        let (closing_brace, brace_contents) 
+            = find_matching_brace(&input[open_l..], open, close)
+            .ok().ok_or_else(|| MatchError::expected(&format!("End of escape string: '{}'", close), "<end of file>"))?;
+        
+        Ok((&closing_brace[close_l..], brace_contents, true))
+    } else {
+        if input.is_empty() {
+            MatchError::expected("some char", input).tap(Err)
+        } else {
+            Ok((&input[1..], &input[..1], false))
+        }
+    }
 }
 
 pub fn match_whitespace(input: &Input) -> MatchResult<&Input> {

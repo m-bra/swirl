@@ -98,7 +98,7 @@ fn test_iter_last() {
 
  pub fn parse_header(s: impl AsRef<str>) -> MatchResult<Header> {
     let added_braces = format!("{{{}}}", s.as_ref());
-    let (rest, header) = match_rule_part(&added_braces, match_invocation)?;
+    let (rest, header) = match_rule_part_def(&added_braces, match_invocation)?;
     if rest.is_empty() {
         Ok(header.unwrap())
     } else {
@@ -108,7 +108,7 @@ fn test_iter_last() {
 
 pub fn parse_body(s: impl AsRef<str>) -> MatchResult<Body> {
     let added_braces = format!("{{{}}}", s.as_ref());
-    let (rest, header) = match_rule_part(&added_braces, match_var)?;
+    let (rest, header) = match_rule_part_def(&added_braces, match_var)?;
     if rest.is_empty() {
         Ok(header.unwrap())
     } else {
