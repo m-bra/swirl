@@ -54,7 +54,7 @@ impl RuleVariant {
                     frame_result.is_ok()
                 } {
                     let (input, results) = frame_result.unwrap();
-                    frame_stack.push((current_input, results));
+                    frame_stack.push( (current_input, results));
                     current_input = input;
                 }
 

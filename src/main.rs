@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
+#![feature(core_intrinsics)]
+
 
 use regex::Regex;
 use std::collections::HashMap;
@@ -21,6 +23,12 @@ extern crate lazy_static;
 pub const ESCAPE_BRACE_OPEN: &str = "{'";
 pub const ESCAPE_BRACE_CLOSE: &str = "'}";
 pub const RULE_INVOCATION_CHAR: char = ':';
+
+static mut INDENT: usize = 0;
+
+fn push_indent() {unsafe {INDENT += 2;}}
+fn pop_indent() {unsafe {INDENT -= 2;}}
+fn get_indent() -> String {unsafe {"  ".repeat(INDENT)}}
 
 // todo: idea:
 // program watches input file
@@ -67,6 +75,7 @@ pub fn match_statement(input: &Input) -> MatchResult<(&Input, (String, Option<Ru
     }
 }
 
+
 pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remove_defs: bool) -> MatchResult<String> {
     let mut result = String::new();
     let mut input = input.to_string();
@@ -86,7 +95,7 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
 
         // add variant to definitions
         if let Some(variant) = maybe_variant {
-            let once = variant.flags.contains("once");
+            let once = variant.flags.contains("call");
             let name = || name.clone();
             rules.entry(name()).or_insert(Rule::new(name())).variants.push(variant);
             let name = name();
@@ -95,6 +104,7 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
                 // next portion to process is after the current rule definition
                 input = statement_end.to_string();
             } else {
+               // unsafe { ::std::intrinsics::breakpoint() }
                 // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
                 let new_input = rules[&name].match_sequence(statement_end, rules, &mut appleft)?;
                 // if this rule was just to be applied once, remove from definitions
@@ -174,10 +184,20 @@ fn repl() -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), ()>  {
+    //return process_file("input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e));
+
+    let mut is_stepping = std::env::args().any(|s| s == "--step" || s == "-s");
+
+    let (steps, remove_defs) = if is_stepping {
+        (MaybeInf::Finite(1), false)
+    } else {
+        (MaybeInf::Infinite, true)
+    };
+
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer)
         .map_err(|e| eprintln!("{}", e))?;
-    let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite, true)
+    let result = process(&buffer, &mut HashMap::new(), steps, remove_defs)
         .map_err(|e| eprintln!("{}", e))?;
     println!("{}", result);
     Ok(())

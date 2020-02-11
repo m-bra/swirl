@@ -1,0 +1,248 @@
+match '--'
+match ::or
+-Try %: or { ::expr {' or '} ::or  } on 'A or A or (A or A)'
+    match ::expr
+    -Try %: expr {( ::or ) } on 'A or A or (A or A)'
+        match '('
+    -> fail.
+    -Try %: expr {A } on 'A or A or (A or A)'
+        match 'A'
+    -> success!
+    match ' or '
+    match ::expr
+    -Try %: expr {( ::or ) } on 'A or (A or A)'
+        match '('
+    -> fail.
+    -Try %: expr {A } on 'A or (A or A)'
+        match 'A'
+    -> success!
+    match ' or '
+    match ::expr
+    -Try %: expr {( ::or ) } on '(A or A)'
+        match '('
+        match ::or
+        -Try %: or { ::expr {' or '}  } on 'A or A)'
+            match ::expr
+            -Try %: expr {( ::or ) } on 'A or A)'
+                match '('
+            -> fail.
+            -Try %: expr {A } on 'A or A)'
+                match 'A'
+            -> success!
+            match ' or '
+        -> success!
+        match ')'
+    -> fail.
+    -Try %: expr {A } on '(A or A)'
+        match 'A'
+    -> fail.
+    -Try %: or { ::expr {' or '} ::expr  } on '(A or A)'
+        match ::expr
+        -Try %: expr {( ::or ) } on '(A or A)'
+            match '('
+            match ::or
+            -Try %: or { ::expr {' or '}  } on 'A or A)'
+                match ::expr
+                -Try %: expr {( ::or ) } on 'A or A)'
+                    match '('
+                -> fail.
+                -Try %: expr {A } on 'A or A)'
+                    match 'A'
+                -> success!
+                match ' or '
+            -> success!
+            match ')'
+        -> fail.
+        -Try %: expr {A } on '(A or A)'
+            match 'A'
+        -> fail.
+    -> fail.
+    -Try %: or { ::expr {' or '} ::expr  } on 'A or (A or A)'
+        match ::expr
+        -Try %: expr {( ::or ) } on 'A or (A or A)'
+            match '('
+        -> fail.
+        -Try %: expr {A } on 'A or (A or A)'
+            match 'A'
+        -> success!
+        match ' or '
+        match ::expr
+        -Try %: expr {( ::or ) } on '(A or A)'
+            match '('
+            match ::or
+            -Try %: or { ::expr {' or '}  } on 'A or A)'
+                match ::expr
+                -Try %: expr {( ::or ) } on 'A or A)'
+                    match '('
+                -> fail.
+                -Try %: expr {A } on 'A or A)'
+                    match 'A'
+                -> success!
+                match ' or '
+            -> success!
+            match ')'
+        -> fail.
+        -Try %: expr {A } on '(A or A)'
+            match 'A'
+        -> fail.
+    -> fail.
+    -Try %: or { ::expr {' or '} ::expr  } on 'A or A or (A or A)'
+        match ::expr
+        -Try %: expr {( ::or ) } on 'A or A or (A or A)'
+            match '('
+        -> fail.
+        -Try %: expr {A } on 'A or A or (A or A)'
+            match 'A'
+        -> success!
+        match ' or '
+        match ::expr
+        -Try %: expr {( ::or ) } on 'A or (A or A)'
+            match '('
+        -> fail.
+        -Try %: expr {A } on 'A or (A or A)'
+            match 'A'
+        -> success!
+    -> success!
+-> success!
+match '--A or '
+match ::or
+-Try %: or { ::expr {' or '} ::or  } on 'A or (A or A)'
+    match ::expr
+    -Try %: expr {( ::or ) } on 'A or (A or A)'
+        match '('
+    -> fail.
+    -Try %: expr {A } on 'A or (A or A)'
+        match 'A'
+    -> success!
+    match ' or '
+    match ::expr
+    -Try %: expr {( ::or ) } on '(A or A)'
+        match '('
+        match ::or
+        -Try %: or { ::expr {' or '}  } on 'A or A)'
+            match ::expr
+            -Try %: expr {( ::or ) } on 'A or A)'
+                match '('
+            -> fail.
+            -Try %: expr {A } on 'A or A)'
+                match 'A'
+            -> success!
+            match ' or '
+        -> success!
+        match ')'
+    -> fail.
+    -Try %: expr {A } on '(A or A)'
+        match 'A'
+    -> fail.
+    -Try %: or { ::expr {' or '} ::expr  } on '(A or A)'
+        match ::expr
+        -Try %: expr {( ::or ) } on '(A or A)'
+            match '('
+            match ::or
+            -Try %: or { ::expr {' or '}  } on 'A or A)'
+                match ::expr
+                -Try %: expr {( ::or ) } on 'A or A)'
+                    match '('
+                -> fail.
+                -Try %: expr {A } on 'A or A)'
+                    match 'A'
+                -> success!
+                match ' or '
+            -> success!
+            match ')'
+        -> fail.
+        -Try %: expr {A } on '(A or A)'
+            match 'A'
+        -> fail.
+    -> fail.
+    -Try %: or { ::expr {' or '} ::expr  } on 'A or (A or A)'
+        match ::expr
+        -Try %: expr {( ::or ) } on 'A or (A or A)'
+            match '('
+        -> fail.
+        -Try %: expr {A } on 'A or (A or A)'
+            match 'A'
+        -> success!
+        match ' or '
+        match ::expr
+        -Try %: expr {( ::or ) } on '(A or A)'
+            match '('
+            match ::or
+            -Try %: or { ::expr {' or '}  } on 'A or A)'
+                match ::expr
+                -Try %: expr {( ::or ) } on 'A or A)'
+                    match '('
+                -> fail.
+                -Try %: expr {A } on 'A or A)'
+                    match 'A'
+                -> success!
+                match ' or '
+            -> success!
+            match ')'
+        -> fail.
+        -Try %: expr {A } on '(A or A)'
+            match 'A'
+        -> fail.
+    -> fail.
+-> fail.
+-Try %: or { ::expr {' or '} ::expr  } on 'A or (A or A)'
+    match ::expr
+    -Try %: expr {( ::or ) } on 'A or (A or A)'
+        match '('
+    -> fail.
+    -Try %: expr {A } on 'A or (A or A)'
+        match 'A'
+    -> success!
+    match ' or '
+    match ::expr
+    -Try %: expr {( ::or ) } on '(A or A)'
+        match '('
+        match ::or
+        -Try %: or { ::expr {' or '} ::or  } on 'A or A)'
+            match ::expr
+            -Try %: expr {( ::or ) } on 'A or A)'
+                match '('
+            -> fail.
+            -Try %: expr {A } on 'A or A)'
+                match 'A'
+            -> success!
+            match ' or '
+            match ::expr
+            -Try %: expr {( ::or ) } on 'A)'
+                match '('
+            -> fail.
+            -Try %: expr {A } on 'A)'
+                match 'A'
+            -> success!
+            match ' or '
+            -Try %: or { ::expr {' or '} ::expr  } on 'A)'
+                match ::expr
+                -Try %: expr {( ::or ) } on 'A)'
+                    match '('
+                -> fail.
+                -Try %: expr {A } on 'A)'
+                    match 'A'
+                -> success!
+                match ' or '
+            -> fail.
+            -Try %: or { ::expr {' or '} ::expr  } on 'A or A)'
+                match ::expr
+                -Try %: expr {( ::or ) } on 'A or A)'
+                    match '('
+                -> fail.
+                -Try %: expr {A } on 'A or A)'
+                    match 'A'
+                -> success!
+                match ' or '
+                match ::expr
+                -Try %: expr {( ::or ) } on 'A)'
+                    match '('
+                -> fail.
+                -Try %: expr {A } on 'A)'
+                    match 'A'
+                -> success!
+            -> success!
+        -> success!
+        match ')'
+    -> success!
+-> success!

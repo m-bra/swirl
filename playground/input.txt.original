@@ -1,0 +1,22 @@
+
+%/: (call) {::c_quote} "hello\\ooo \w\o\r\l\d\o\o"
+
+
+%: expr {A}
+%: expr {(::or)}
+
+%: or {::expr {' or '} ::expr}
+%: or {::expr {' or '} ::or}
+
+::or(::expr or ::or)
+::or(::expr or ::or(::expr or ::or))
+::or(::expr or ::or(::expr or ::or-fail))
+::or(::expr or ::or(::expr or ::expr))
+
+%: (call) {--::or} {<<<yes>>>}
+
+        --A or A or (A or A)
+
+%: (call) {--A {' or '} ::or} {<<<yes>>>}
+
+        --A or A or (A or A)

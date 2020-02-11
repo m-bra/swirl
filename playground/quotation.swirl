@@ -1,0 +1,7 @@
+%: quotation { { ' ::quotation_inner_s ' } }
+%: quotation_inner_s {}
+%: quotation_inner_s {::quotation_inner::quotation_inner_s}
+%: quotation_inner {::quotation}
+%: quotation_inner {::not_quotation_begin::not_quotation_end::anychar}
+%: not_quotation_end (not) { ' {'}'} }
+%: not_quotation_begin (not) { {'{'} ' }

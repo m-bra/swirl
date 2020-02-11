@@ -1,0 +1,24 @@
+
+%: c_quote_ttt_tt {}
+%: c_quote_ttt_tt {::c_quote_ttt_tt_maybe}
+%: c_quote_ttt_tt_maybe {}
+%: c_quote_ttt_tt_maybe {::c_quote_ttt_tt_maybe_maybe}
+%: c_quote_ttt_tt_maybe_maybe {y}
+
+%: c_quote_ttt_t {x}
+
+%: c_quote_ttt {::c_quote_ttt_tt}
+%: c_quote_ttt {::c_quote_ttt_t}
+
+%: c_quote_tt {}
+%: c_quote_tt {::c_quote_tt_maybe}
+
+%: c_quote_tt_maybe {c} {d}
+
+%: c_quote_t {a} {b} 
+
+%: c_quote {::c_quote_ttt}
+%: c_quote {::c_quote_tt}
+%: c_quote {::c_quote_t}
+
+{a} -> {b} or ({c} -> {d})? or ({x} or (({y})?)?)

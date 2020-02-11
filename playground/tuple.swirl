@@ -1,25 +1,29 @@
-%: (once) {::groups_swirl::lean_comment_swirl}
-%: tuple_swirl {}
+%: (call) {::tuple_swirl} {} (catch unknown rule) {
+    %: pair_swirl {}
+    %: tuple_swirl {}
 
-%: tuple_get {:n:index_number::nwh. of::nwh. :els:tuple_elements} {
-    %: (once) {. ::_tuple_get.} :n of :els
+    %: (call) {::groups_swirl::lean_comment_swirl::quotation_swirl}
+
+    %: /syntax/ pair_get { {'left of '} ::pair_begin :l:pair_inner_s ::pair_middle :r:pair_inner_s ::pair_end } {
+        :l
+    }
+    %: /syntax/ pair_get { {'right of '} ::pair_begin :l:pair_inner_s ::pair_middle :r:pair_inner_s ::pair_end } {
+        :r
+    }
+
+    
+
+    /
+        %: pair { ::pair_begin ::pair_inner_s ::pair_middle ::pair_inner_s ::pair_end }
+        %: pair_inner_s {}
+        %: pair_inner_s {::pair_inner::pair_inner_s}
+        %: pair_inner {::pair}
+        %: pair_inner {::not_pair_begin::not_pair_end::not_pair_middle::anychar}
+        %: not_pair_end (not) { ::pair_end }
+        %: not_pair_begin (not) { ::pair_begin }
+        %: not_pair_middle (not) {::pair_middle}
+        %: pair_begin {{'{[.pair.['}}
+        %: pair_end {{'].pair.]}'}}
+        %: pair_middle {{'].pair.['}}
+    /
 }
-
-%: _tuple_get {0. of. :r:tuple_element::nwh ::tuple_elements} {:r}
-%: _tuple_get {1. of. ::tuple_element::nwh :r:tuple_element::nwh ::tuple_elements} {:r}
-
-%: tuple_elements {}
-%: tuple_elements {::tuple_element::nwh::tuple_elements}
-%: tuple_element {(::non_brace_text)}
-
-%: non_brace_text {}
-%: non_brace_text {::not_closing_brace::anychar::non_brace_text}
-%: not_closing_brace {)}
-
-
-%: apply_tuple_gets {}
-%: apply_tuple_gets {::apply_tuple_get::apply_tuple_gets}
-%: apply_tuple_get {::anychar}
-%: apply_tuple_get {::tuple_get}
-
-%: /(syntax)/ {::apply_tuple_gets}

@@ -1,4 +1,4 @@
-%: (once) {::groups_swirl}
+%: (call) {::groups_swirl}
 %: lean_comment_swirl {}
 %: lean_comments_swirl {}
 

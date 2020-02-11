@@ -27,9 +27,9 @@
 %: remove_newline {::anychar}
 %: remove_newline {::newline} {}
 %: not_end (not) {END. INIT}
-%: (once) {::remove_newlines}
+%: (call) {::remove_newlines}
 
-%: uint {::09}%: uint {::09::uint}%: index_number {::uint.th} {:}%: index_number {first} {1}%: index_number {second} {2}%: index_number {third} {3}%: c_ident {::alnum_}%: c_ident {::alnum_::c_ident}%: (once) {END. INIT} {} END INIT%: lean_comment.swirl
+%: uint {::09}%: uint {::09::uint}%: index_number {::uint.th} {:}%: index_number {first} {1}%: index_number {second} {2}%: index_number {third} {3}%: c_ident {::alnum_}%: c_ident {::alnum_::c_ident}%: (call) {END. INIT} {} END INIT%: lean_comment.swirl
 
 /uniq.swirl uses its namespace uniq_*/
 %: process_uniq_loop {}
@@ -37,7 +37,7 @@
 
 %: process_uniq {::anychar}
 %: process_uniq {UNIQ. :ident:c_ident} {
-. . %.:. (once). {.:.:uniq_register_:ident.}.
+. . %.:. (call). {.:.:uniq_register_:ident.}.
 . . {.
 . . . . %..: uniq_fail {...}. {:ident...}.
 . . .}.

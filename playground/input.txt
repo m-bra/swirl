@@ -1,0 +1,2 @@
+
+%-: {::c_quote} "hell\\o \w\o\r\l\d"

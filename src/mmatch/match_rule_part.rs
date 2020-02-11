@@ -7,10 +7,15 @@ fn match_positive_rule_head<'a>(input: &'a Input, rule_head: &Header, rules: &Ru
     let mut input: &'a Input = input;
 
     for (part, invocs) in rule_head.iter() {
+        if !part.is_empty() {
+            //println!("{}match '{}'", get_indent(), part);
+        }
         input = match_str(input, part)?;
 
         for &RuleInvocation(ref var, ref rule) in invocs {
             input = {
+                //println!("{}match ::{}", get_indent(), rule);
+
                 let rule = rules.get(rule)
                     .ok_or_else(|| {
                         MatchError::unknown_rule(rule, "<>")

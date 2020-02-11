@@ -9,9 +9,18 @@ impl Rule {
         //let variants = &rules.get(name).ok_or_else(|| MatchError::new(format!("Rule '{}' does not exist.", name), &mut vec![]))?.variants;
         let mut candidate_errors = candidate_errors;
         for (i, v) in self.variants.iter().rev().enumerate().skip(skip) {
+            //println!("{}-Try %: {} {{{}}} on '{}'", get_indent(), self.name, v.header, firstline(input));
+            push_indent();
+
             match v.try_match(input, rules, &self.name, i) {
-                Ok((input, result)) => return Ok((input, result)),
+                Ok((input, result)) => {
+                    pop_indent();
+                    //println!("{}-> success!", get_indent());
+                    return Ok((input, result))
+                },
                 Err(err) => {
+                    pop_indent();
+                    //println!("{}-> fail.", get_indent());
                     candidate_errors.push(err);
                 },
             }

@@ -13,6 +13,9 @@ pub use dump_file::*;
 mod tap;
 pub use tap::*;
 
+mod clone_unsafecell;
+pub use clone_unsafecell::*;
+
 use std::ops::*;
 use std::cmp::*;
 

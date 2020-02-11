@@ -1,5 +1,7 @@
-%: (once) {::groups_swirl::lean_comment_swirl}
+%: (call) {::groups_swirl::lean_comment_swirl}
 %: reflect_swirl {}
+
+%: quotation.swirl
 
 %: rule_invocation {::swirl_rule_invocation}
 %: swirl_rule_invocation {
@@ -11,29 +13,23 @@
 
 %: not_part_end (not) {{'}'}}
 
-%: quotation { { ' ::quotation_inner_s ' } }
-%: quotation_inner_s {}
-%: quotation_inner_s {::quotation_inner::quotation_inner_s}
-%: quotation_inner {::quotation}
-%: quotation_inner {::not_quotation_begin::not_quotation_end::anychar}
-%: not_quotation_end (not) { ' {'}'} }
-%: not_quotation_begin (not) { {'{'} ' }
-
 %: rule_header {::swirl_rule_header}
 %: swirl_rule_header { { ::rule_header_inner } }
 %: rule_header_inner {}
 %: rule_header_inner {::not_part_end::rule_header_inner_1::rule_header_inner}
-%: rule_header_inner_1 {::anychar}
-%: rule_header_inner_1 {::quotation}
+%: rule_header_inner_1 {::rule_part_inner_1}
 %: rule_header_inner_1 {::rule_invocation}
 
 %: rule_body {::swirl_rule_body}
 %: swirl_rule_body { { ::rule_body_inner } }
 %: rule_body_inner {}
 %: rule_body_inner {::not_part_end::rule_body_inner_1::rule_body_inner}
-%: rule_body_inner_1 {::anychar}
-%: rule_body_inner_1 {::quotation}
+%: rule_body_inner_1 {::rule_part_inner_1}
 %: rule_body_inner_1 {::var_invocation}
+
+%: rule_part_inner_1 {::anychar}
+%: rule_part_inner_1 {::quotation}
+
 
 %: maybe_rule_body {}
 %: maybe_rule_body {::rule_body}
@@ -46,4 +42,18 @@
 %: flags {::flag::nwh::flags}
 
 %: rule {::swirl_rule}
-%: swirl_rule {%.: ::nwh ::ident ::nwh ::flags ::nwh ::rule_header ::nwh ::maybe_rule_body}
+%: swirl_rule {%.: ::nwh ::ident ::nwh ::untagged_nameless_rule}
+
+%: nameless_rule {::untagged_nameless_rule}
+%: tagged_nameless_rule {(rule) ::nwh ::untagged_nameless_rule}
+%: untagged_nameless_rule {::flags ::nwh ::rule_header ::nwh ::maybe_rule_body ::nwh ::maybe_catch_body}
+
+%: nameless_rule_arrow_notation {::flags ::nwh ::rule_header}
+%: nameless_rule_arrow_notation {::flags ::nwh ::rule_header ::nwh -> ::nwh ::rule_body ::nwh ::maybe_catch_body}
+
+%: nameless_rule_remove_arrow_notation {::flags ::nwh ::rule_header}
+%: nameless_rule_remove_arrow_notation {
+    :a:flags :b:nwh :c:rule_header :d:nwh -> :e:nwh :f:rule_body :g:nwh :h:maybe_catch_body
+} {
+    :a :b :c :d :e :f :g :h
+}

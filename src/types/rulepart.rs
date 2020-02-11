@@ -1,21 +1,33 @@
+#![allow(mutable_transmutes)]
+
 use std::collections::{BTreeMap, HashMap};
 use std::cell::UnsafeCell;
 use crate::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RulePart<Invocation: Clone> {
     text: String,
     /// each usize, an index in .text, is associated with all the rule invocations that appear (in the given order) right before the index
     /// it is assumed that there are no keys > text.len()
     /// a key of text.len() means that the invocations are at the end of the rule part, without any text afterwards
-    invocations: BTreeMap<usize, UnsafeCell<Vec<Invocation>>>,
+    invocations: BTreeMap<usize, CloneUnsafeCell<Vec<Invocation>>>,
 }
 
 #[derive(Clone)]
 pub struct RulePartBuilder<Invocation: Clone>(RulePart<Invocation>);
 
 use std::mem::transmute;
-#[allow(mutable_transmutes)]
+
+impl<Invocation: Clone + std::fmt::Debug> RulePart<Invocation> {
+    pub fn debug_print(&self) {
+        println!("invocations with text '{}': ", self.text);
+        for (i, cell) in self.invocations.iter() {
+            println!("{}, {:?}", i, unsafe {
+                &*cell.get()
+            })
+        }
+    }
+}
 
 impl<Invocation: Clone> RulePart<Invocation> {
     pub fn new() -> RulePartBuilder<Invocation> {
@@ -134,6 +146,16 @@ fn test_rule_part_iter() {
         header.iter().collect::<Vec::<_>>(),
         vec![("", &[ab][..]), ("12", &[cd, ef][..]), ("34", &[][..])]
     );
+
+    let header = match_rule_part_def("{::expr {' or '} ::or}", match_invocation)  .unwrap().1.unwrap();
+
+    let expr = RuleInvocation::new("", "expr");
+    let or = RuleInvocation::new("", "or");
+
+    assert_eq!(
+        header.iter().collect::<Vec::<_>>(),
+        vec![("", &[expr][..]), (" or ", &[or][..]), ("", &[])]
+    );
 }
 
 impl<Invocation: Clone> RulePartBuilder<Invocation> {
@@ -149,7 +171,7 @@ impl<Invocation: Clone> RulePartBuilder<Invocation> {
     pub fn add_invoc(&mut self, invoc: Invocation) {
         unsafe {
             self.0.invocations.entry(self.0.text.len())
-                .or_insert(UnsafeCell::new(Vec::new()))
+                .or_insert(CloneUnsafeCell::new(Vec::new()))
                 .get().as_mut().unwrap()
                 .push(invoc);
         }
@@ -169,18 +191,19 @@ impl Header {
         let mut tail = None;
 
         unsafe {
-            if let Some(invoc) = self.pop_end_invoc() {
+            let this = self.clone();
+            if let Some(invoc) = this.pop_end_invoc() {
                 if invoc.rule() == tail_name.as_ref() {
                     tail = Some(invoc);
                 } else {
-                    self.push_invoc(invoc);
+                    this.push_invoc(invoc);
                 }
             }
 
-            let result = inner(&self);
+            let result = inner(&this);
 
             if let Some(invoc) = tail {
-                self.push_invoc(invoc);
+                this.push_invoc(invoc);
             }
             result
         }
@@ -191,7 +214,7 @@ impl Header {
             .map(|(key, invocations)| {
                 let invocations = unsafe { &*invocations.get() };
                 let invocations = invocations.iter().map(|invoc| VarInvocation(invoc.result_var().into())).collect::<Vec<_>>();
-                (*key, UnsafeCell::new(invocations))
+                (*key, CloneUnsafeCell::new(invocations))
             })
             .collect();
 
@@ -245,7 +268,7 @@ impl<I: Clone + PartialEq> PartialEq for RulePart<I> {
 }
 impl<I: Clone + PartialEq + Eq> Eq for RulePart<I> {}
 
-impl<I: Clone> Clone for RulePart<I> {
+/*impl<I: Clone> Clone for RulePart<I> {
     fn clone(&self) -> Self {
         RulePart {
             text: self.text.clone(),
@@ -254,4 +277,4 @@ impl<I: Clone> Clone for RulePart<I> {
             }).collect::<BTreeMap<_, _>>()
         }
     }
-}
+}*/

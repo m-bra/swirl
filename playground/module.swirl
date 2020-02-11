@@ -1,0 +1,16 @@
+%: (call) {::_module_imported__module_swirl} {} (catch unknown rule) {
+    %: _module_imported__module_swirl {}
+
+    %: syntax_def_module {
+        module ::1nwh :name:c_ident ::nwh { ::nwh
+            :defs:module_defs
+        }
+    }
+
+    %: module_defs {}
+    %: module_defs {::module_def::nwh::module_defs}
+
+    %: module_def {
+        rule ::1nwh /here now i need reflection syntax/
+    }
+}
