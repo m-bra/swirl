@@ -3,8 +3,8 @@
 use crate::error::*;
 use crate::*;
 
-mod match_rule_part;
-pub use match_rule_part::*;
+mod match_invocation_string;
+pub use match_invocation_string::*;
 
 mod match_rule_def;
 pub use match_rule_def::*;
@@ -65,38 +65,47 @@ pub fn match_ident<'a>(input: &'a Input) -> MatchResult<(&'a Input, &str)> {
     }
 }
 
-pub fn match_var<'a>(input: &'a Input) -> MatchResult<(&'a Input, VarInvocation)> {
+pub fn match_var<'a>(input: &'a Input) -> MatchResult<(&'a Input, Invocation)> {
     match_char(input, ':').and_then(match_ident).map(|(input, ident)| (input,
-        VarInvocation(ident.into())
+        Invocation::new_var_invocation(ident)
     ))
 }
 
 #[test]
 pub fn test_match_invocation() {
     assert_eq!(
-        match_invocation("::rule text"),
-        Ok((" text", RuleInvocation::new("", "rule")))
+        match_rule_invoc("::rule text"),
+        Ok((" text", Invocation::new_rule_invocation("", "rule")))
     );
     assert_eq!(
-        match_invocation(":name:rule text"),
-        Ok((" text", RuleInvocation::new("name", "rule")))
+        match_rule_invoc(":name:rule text"),
+        Ok((" text", Invocation::new_rule_invocation("name", "rule")))
     );
     assert!(
-        match_invocation(":name:: text").is_err()
+        match_rule_invoc(":name:: text").is_err()
     );
     assert!(
-        match_invocation("text :name:rule").is_err()
+        match_rule_invoc("text :name:rule").is_err()
     );
 }
 
-pub fn match_invocation<'a>(input: &'a Input) -> MatchResult<(&'a Input, RuleInvocation)> {
+pub fn match_rule_invoc<'a>(input: &'a Input) -> MatchResult<(&'a Input, Invocation)> {
     let input = match_char(input, RULE_INVOCATION_CHAR)?;
     let (input, variable_ident) = match_ident(input).unwrap_or((input, ""));
     let input = match_char(input, RULE_INVOCATION_CHAR)?;
     let (input, rule_ident) = match_ident(input)?;
+    let (input, invoc) = match_invocation_string_def(input, '(', ')')?;
+    let invoc = invoc.unwrap_or(InvocationString::empty());
 
-    let (variable_ident, rule_ident) = (variable_ident.into(), rule_ident.into());
-    (input, RuleInvocation(variable_ident, rule_ident)).tap(Ok)
+    (input, Invocation::new_rule_invoc_with_param(variable_ident, rule_ident, invoc)).tap(Ok)
+}
+
+pub fn match_invocation(input: &Input) -> MatchResult<(&Input, Invocation)> {
+    if let Ok((input, invoc)) = match_rule_invoc(input) {
+        (input, invoc).tap(Ok)
+    } else {
+        match_var(input)
+    }
 }
 
 /*
@@ -218,10 +227,10 @@ pub fn match_whitespaces(mut input: &Input) -> MatchResult<&Input> {
 }
 
 
-pub fn match_invocation_<'a>(input: &'a Input, _: &()) -> MatchResult<(&'a Input , RuleInvocation)> {
-    match_invocation(input)
+pub fn match_rule_invoc_<'a>(input: &'a Input, _: &()) -> MatchResult<(&'a Input , Invocation)> {
+    match_rule_invoc(input)
 }
 
-pub fn match_var_<'a>(input: &'a Input, _: &()) -> MatchResult<(&'a Input, VarInvocation)> {
+pub fn match_var_<'a>(input: &'a Input, _: &()) -> MatchResult<(&'a Input, Invocation)> {
     match_var(input)
 }

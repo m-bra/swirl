@@ -5,14 +5,14 @@ use crate::*;
 
 impl Rule {
     /// start trying to apply rule variants from the bottom up, skipping a number of variants
-    pub fn match_last_skip<'a>(&self, input: &'a str, rules: &Rules, skip: usize, candidate_errors: Vec<MatchError>) -> MatchResult<(&'a str, String)> {
+    pub fn match_last_skip<'a>(&self, input: &'a str, param: &str, rules: &Rules, skip: usize, candidate_errors: Vec<MatchError>) -> MatchResult<(&'a str, String)> {
         //let variants = &rules.get(name).ok_or_else(|| MatchError::new(format!("Rule '{}' does not exist.", name), &mut vec![]))?.variants;
         let mut candidate_errors = candidate_errors;
         for (i, v) in self.variants.iter().rev().enumerate().skip(skip) {
             //println!("{}-Try %: {} {{{}}} on '{}'", get_indent(), self.name, v.header, firstline(input));
             push_indent();
 
-            match v.try_match(input, rules, &self.name, i) {
+            match v.try_match(input, param, rules, &self.name, i) {
                 Ok((input, result)) => {
                     pop_indent();
                     //println!("{}-> success!", get_indent());
@@ -28,8 +28,8 @@ impl Rule {
         return MatchError::compose(format!("No variant of '{}' matched.", self.name), candidate_errors).tap(Err);
     }
 
-    pub fn match_last<'a>(&self, input: &'a str, rules: &Rules) -> Result<(&'a str, String), MatchError> {
-        self.match_last_skip(input, rules, 0, vec![])
+    pub fn match_last<'a>(&self, input: &'a str, param: &str, rules: &Rules) -> Result<(&'a str, String), MatchError> {
+        self.match_last_skip(input, param, rules, 0, vec![])
     }
 
     pub fn match_sequence(&self, input: &str, rules: &Rules, appleft: &mut MaybeInf<u32>) -> Result<String, MatchError> {
@@ -44,7 +44,7 @@ impl Rule {
 
             *appleft-= 1;
 
-            let (unconsumed, replace) = variant.try_match(&input, rules, "", i)?;
+            let (unconsumed, replace) = variant.try_match(&input, "", rules, "", i)?;
             input = replace + unconsumed;
         }
         Ok(input)
@@ -58,10 +58,10 @@ fn test_match_last() {
         name: "digit".to_string(),
         variants: vec![
             RuleVariant::new(
-                Header::literally("0"), None,
+                InvocationString::literally("0"), None,
             ),
             RuleVariant::new(
-                Header::literally("1"), None,
+                InvocationString::literally("1"), None,
             )
     ]};
     let ruleDigits = Rule {
@@ -78,6 +78,6 @@ fn test_match_last() {
     rules.insert("digit".to_string(), ruleDigit.clone());
     rules.insert("digits".to_string(), ruleDigits.clone());
 
-    assert_eq!(ruleDigits.match_last("01110d01", &rules), Ok(("d01", "Two times: 00".to_string())));
-    assert!(ruleDigits.match_last("abcde", &rules).is_err());
+    assert_eq!(ruleDigits.match_last("01110d01", "", &rules), Ok(("d01", "Two times: 00".to_string())));
+    assert!(ruleDigits.match_last("abcde", "", &rules).is_err());
 }

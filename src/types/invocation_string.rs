@@ -5,7 +5,7 @@ use std::cell::UnsafeCell;
 use crate::*;
 
 #[derive(Debug, Clone)]
-pub struct RulePart<Invocation: Clone> {
+pub struct InvocationString {
     text: String,
     /// each usize, an index in .text, is associated with all the rule invocations that appear (in the given order) right before the index
     /// it is assumed that there are no keys > text.len()
@@ -14,11 +14,11 @@ pub struct RulePart<Invocation: Clone> {
 }
 
 #[derive(Clone)]
-pub struct RulePartBuilder<Invocation: Clone>(RulePart<Invocation>);
+pub struct InvocationStringBuilder(InvocationString);
 
 use std::mem::transmute;
 
-impl<Invocation: Clone + std::fmt::Debug> RulePart<Invocation> {
+impl InvocationString {
     pub fn debug_print(&self) {
         println!("invocations with text '{}': ", self.text);
         for (i, cell) in self.invocations.iter() {
@@ -29,21 +29,33 @@ impl<Invocation: Clone + std::fmt::Debug> RulePart<Invocation> {
     }
 }
 
-impl<Invocation: Clone> RulePart<Invocation> {
-    pub fn new() -> RulePartBuilder<Invocation> {
-        RulePartBuilder(
-            RulePart {
-                text: String::new(),
-                invocations: BTreeMap::new(),
-            }
+impl InvocationString {
+    pub fn empty() -> InvocationString {
+        InvocationString {
+            text: String::new(),
+            invocations: BTreeMap::new(),
+        }
+    }
+
+    pub fn new() -> InvocationStringBuilder {
+        InvocationStringBuilder(
+            InvocationString::empty()
         )
     }
 
-    pub fn literally(text: impl Into<String>) -> RulePart<Invocation> {
-        RulePart {
+    pub fn literally(text: impl Into<String>) -> InvocationString {
+        InvocationString {
             text: text.into(),
             invocations: BTreeMap::new(),
         }
+    }
+
+    pub fn has_invocations(&self) -> bool {
+        self.invocations.len() != 0
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty() && !self.has_invocations()
     }
 
     /// iterate text and invocation segments
@@ -90,14 +102,14 @@ impl<Invocation: Clone> RulePart<Invocation> {
 
 #[test]
 fn test_iter_last() {
-    let ab = RuleInvocation::new("a", "b");
-    let cd = RuleInvocation::new("c", "d");
-    let ef = RuleInvocation::new("e", "f");
+    let ab = Invocation::new_rule_invocation("a", "b");
+    let cd = Invocation::new_rule_invocation("c", "d");
+    let ef = Invocation::new_rule_invocation("e", "f");
 
-    // filter out ("", &[]) from RulePart::iter()
+    // filter out ("", &[]) from InvocationString::iter()
     let nonempty = |(string, slice): &(&str, &[_])| !string.is_empty() || slice.len() != 0;
 
-    let mut part = Header::new();
+    let mut part = InvocationString::new();
     part.add_invoc(ab.clone());
     assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("", &[ab][..])));
     part.add_str("01");
@@ -108,9 +120,9 @@ fn test_iter_last() {
     assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("23", &[][..])))
 }
 
- pub fn parse_header(s: impl AsRef<str>) -> MatchResult<Header> {
+ pub fn parse_header(s: impl AsRef<str>) -> MatchResult<InvocationString> {
     let added_braces = format!("{{{}}}", s.as_ref());
-    let (rest, header) = match_rule_part_def(&added_braces, match_invocation)?;
+    let (rest, header) = match_invocation_string_def(&added_braces, '{', '}')?;
     if rest.is_empty() {
         Ok(header.unwrap())
     } else {
@@ -118,9 +130,9 @@ fn test_iter_last() {
     }
 }
 
-pub fn parse_body(s: impl AsRef<str>) -> MatchResult<Body> {
+pub fn parse_body(s: impl AsRef<str>) -> MatchResult<InvocationString> {
     let added_braces = format!("{{{}}}", s.as_ref());
-    let (rest, header) = match_rule_part_def(&added_braces, match_var)?;
+    let (rest, header) = match_invocation_string_def(&added_braces, '{', '}')?;
     if rest.is_empty() {
         Ok(header.unwrap())
     } else {
@@ -129,12 +141,12 @@ pub fn parse_body(s: impl AsRef<str>) -> MatchResult<Body> {
 }
 
 #[test]
-fn test_rule_part_iter() {
-    let ab = RuleInvocation::new("a", "b");
-    let cd = RuleInvocation::new("c", "d");
-    let ef = RuleInvocation::new("e", "f");
+fn test_invocation_string_iter() {
+    let ab = Invocation::new_rule_invocation("a", "b");
+    let cd = Invocation::new_rule_invocation("c", "d");
+    let ef = Invocation::new_rule_invocation("e", "f");
 
-    let mut header = Header::new();
+    let mut header = InvocationString::new();
     header.add_invoc(ab.clone());
     header.add_str("12");
     header.add_invoc(cd.clone());
@@ -147,10 +159,10 @@ fn test_rule_part_iter() {
         vec![("", &[ab][..]), ("12", &[cd, ef][..]), ("34", &[][..])]
     );
 
-    let header = match_rule_part_def("{::expr {' or '} ::or}", match_invocation)  .unwrap().1.unwrap();
+    let header = match_invocation_string_def("{::expr {' or '} ::or}", '{', '}')  .unwrap().1.unwrap();
 
-    let expr = RuleInvocation::new("", "expr");
-    let or = RuleInvocation::new("", "or");
+    let expr = Invocation::new_rule_invocation("", "expr");
+    let or = Invocation::new_rule_invocation("", "or");
 
     assert_eq!(
         header.iter().collect::<Vec::<_>>(),
@@ -158,7 +170,7 @@ fn test_rule_part_iter() {
     );
 }
 
-impl<Invocation: Clone> RulePartBuilder<Invocation> {
+impl InvocationStringBuilder {
     pub fn add_char(&mut self, c: char) {
         self.0.text.push(c);
     }
@@ -177,23 +189,24 @@ impl<Invocation: Clone> RulePartBuilder<Invocation> {
         }
     }
 
-    pub fn seal(self) -> RulePart<Invocation> {self.0}
+    pub fn seal(self) -> InvocationString {self.0}
 }
 
-pub type Header = RulePart<RuleInvocation>;
-
-pub type Body = RulePart<VarInvocation>;
-
-impl Header {
+impl InvocationString {
     /// accessing the header memory from any other than the reference given to the closure will result in undefined behaviour
     /// because the header is modified without having a mutable reference to it.
-    pub fn without_tail_recursion<R>(&self, tail_name: impl AsRef<str>, inner: impl FnOnce(&RulePart<RuleInvocation>) -> MatchResult<R>) -> MatchResult<R> {
+    pub fn without_tail_recursion<R>(&self, tail_name: impl AsRef<str>, inner: impl FnOnce(&InvocationString) -> MatchResult<R>) -> MatchResult<R> {
         let mut tail = None;
 
         unsafe {
             let this = self.clone();
             if let Some(invoc) = this.pop_end_invoc() {
-                if invoc.rule() == tail_name.as_ref() {
+                let rulename = match &invoc {
+                    Invocation::RuleInvocation(_, rulename, _) => rulename,
+                    _ => panic!("ouf")
+                };
+
+                if rulename == tail_name.as_ref() {
                     tail = Some(invoc);
                 } else {
                     this.push_invoc(invoc);
@@ -209,52 +222,65 @@ impl Header {
         }
     }
 
-    pub fn as_body(&self) -> Body {
-        let invocations = self.invocations.iter()
-            .map(|(key, invocations)| {
-                let invocations = unsafe { &*invocations.get() };
-                let invocations = invocations.iter().map(|invoc| VarInvocation(invoc.result_var().into())).collect::<Vec<_>>();
-                (*key, CloneUnsafeCell::new(invocations))
-            })
-            .collect();
-
-        RulePart {
-            text: self.text.clone(),
-            invocations: invocations,
+    pub fn ensure_only_var_invocs(self) -> Result<VarInvocationString, InvocationString> {
+        if self.iter().any(|(_, invocs)| invocs.iter().any(|invoc| match invoc {
+            Invocation::VarInvocation(_) => false,
+            _ => true,
+        })) {
+            Err(self)
+        } else {
+            Ok(VarInvocationString(self))
         }
+    }
+
+    pub fn assume_only_var_invocs(self) -> VarInvocationString {
+        VarInvocationString(self)
     }
 }
 
-impl Body {
+// an invocation string with only variable invocations :var
+#[derive(PartialEq, Eq)]
+pub struct VarInvocationString(InvocationString);
+
+impl VarInvocationString {
     pub fn bind_vars(&self, named_binds: &HashMap<String, String>, unnamed_binds: &Vec<String>) -> MatchResult<String> {
+        let VarInvocationString(this) = self;
         let mut anon_i = 0;
         let mut buf = String::new();
-        for (part, invocations) in self.iter() {
+        for (part, invocations) in this.iter() {
             buf.push_str(part);
-            for VarInvocation(var) in invocations {
-                if !var.is_empty() {
-                    if named_binds.contains_key(var) {
-                        buf.push_str(&named_binds[var]);
-                    } else {
-                        return MatchError::unknown_variable(var, "<>").tap(Err)
+            for invoc in invocations {
+                match invoc {
+                    Invocation::VarInvocation(var) if !var.is_empty() => {
+                        if named_binds.contains_key(var) {
+                            buf.push_str(&named_binds[var]);
+                        } else {
+                            return MatchError::unknown_variable(var, "<>").tap(Err)
+                        }
                     }
-                } else {
-                    if anon_i < unnamed_binds.len() {
-                        buf.push_str(&unnamed_binds[anon_i]);
-                    } else {
-                        return MatchError::new("Too many anonymous variables").tap(Err);
+                    Invocation::VarInvocation(_/*empty*/) => {
+                        if anon_i < unnamed_binds.len() {
+                            buf.push_str(&unnamed_binds[anon_i]);
+                        } else {
+                            return MatchError::new("Too many anonymous variables").tap(Err);
+                        }
+                        anon_i += 1;
                     }
-                    anon_i += 1;
+                    _ => unreachable!()
                 }
             }
         }
         Ok(buf)
     }
+
+    pub fn unwrap(self) -> InvocationString {
+        self.0
+    }
 }
 
 // boring stuff ugh
 
-impl<I: Clone + PartialEq> PartialEq for RulePart<I> {
+impl PartialEq for InvocationString {
     fn eq(&self, other: &Self) -> bool {
         self.text == other.text && {
             self.invocations.iter().all(|(key, value)| {
@@ -266,11 +292,11 @@ impl<I: Clone + PartialEq> PartialEq for RulePart<I> {
         }
     }
 }
-impl<I: Clone + PartialEq + Eq> Eq for RulePart<I> {}
+impl Eq for InvocationString {}
 
-/*impl<I: Clone> Clone for RulePart<I> {
+/*impl<I: Clone> Clone for InvocationString {
     fn clone(&self) -> Self {
-        RulePart {
+        InvocationString {
             text: self.text.clone(),
             invocations: self.invocations.iter().map(|(key, invocs)| {
                 (*key, unsafe {&*invocs.get()}.clone().tap(|invocs| UnsafeCell::new(invocs)))

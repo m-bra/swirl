@@ -3,15 +3,17 @@ use crate::*;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct RuleVariant {
-    pub header: Header,
-    pub body: Option<Body>,
+    pub parameter_header: Option<InvocationString>,
+    pub header: InvocationString,
+    pub body: Option<InvocationString>,
     pub flags: HashSet<String>,
-    pub catch_unknown_rule: Option<Body>,
+    pub catch_unknown_rule: Option<InvocationString>,
 }
 
 impl RuleVariant {
-    pub fn new(header: Header, body: Option<Body>) -> RuleVariant {
+    pub fn new(header: InvocationString, body: Option<InvocationString>) -> RuleVariant {
         RuleVariant {
+            parameter_header: None,
             header,
             body,
             flags: HashSet::new(),
@@ -21,5 +23,13 @@ impl RuleVariant {
 
     pub fn header_negated(&self) -> bool {
         self.flags.contains("not")
+    }
+
+    pub fn shallow_call(&self) -> bool {
+        self.flags.contains("call")
+    }
+
+    pub fn deep_call(&self) -> bool {
+        !self.shallow_call()
     }
 }

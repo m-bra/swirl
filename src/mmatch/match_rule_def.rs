@@ -6,18 +6,18 @@ use std::collections::HashSet;
 #[test]
 fn test_match_rule_def() {
     let header = || {
-        let mut header = Header::new();
+        let mut header = InvocationString::new();
         header.add_char('.');
-        header.add_invoc(RuleInvocation("".into(), "rule".into()));
+        header.add_invoc(Invocation::new_rule_invocation("", "rule"));
         header.add_char('}');
         header.seal()
     };
 
     let body = {
-        let mut body = Body::new();
-        body.add_invoc(VarInvocation ("var".into()));
+        let mut body = InvocationString::new();
+        body.add_invoc(Invocation::new_var_invocation("var"));
         body.add_char(':');
-        body.add_invoc(VarInvocation ("othervar".into()));
+        body.add_invoc(Invocation::new_var_invocation("othervar"));
         body.seal()
     };
 
@@ -93,18 +93,26 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
         return MatchError::new("Can only use flag (once) on unnamed rules").tap(Err);
     }
 
-    // {header with :rule:invocation.s} {body with :var.s} (catch unknown rule) {body with :var.s}
-    let header_start = input;
-    let (input, header) = match_rule_part_def(input, match_invocation)?;
-    let header = header.ok_or_else(|| MatchError::expected("Rule header", header_start))?;
+    // {parameter header} {input header with :rule:invocation.s} -> {body with :var.s} (catch unknown rule) {body with :var.s}
+
+    let (input, parameter_header) = match_invocation_string_def(input, '(', ')')?;
     let input = match_whitespaces(input)?;
-    let (input, body) = match_rule_part_def(input, match_var)?;
+
+    let header_start = input;
+    let (input, input_header) = match_invocation_string_def(input, '{', '}')?;
+    let input_header = input_header.ok_or_else(|| MatchError::expected("Rule header", header_start))?;
+    let input = match_whitespaces(input)?;
+
+    let input = match_str(input, "->")?;
+    let input = match_whitespaces(input)?;
+
+    let (input, body) = match_invocation_string_def(input, '{', '}')?;
     let input = match_whitespaces(input)?;
     let (input, catch_unknown_rule) = match match_str(input, "(catch unknown rule)") {
         Ok(input) => {
             let input = match_whitespaces(input)?;
             let catch_body_start = input;
-            let (input, catch_body) = match_rule_part_def(input, match_var)?;
+            let (input, catch_body) = match_invocation_string_def(input, '{', '}')?;
             let catch_body = catch_body.ok_or_else(|| MatchError::expected("Catch Body", catch_body_start))?;
             (input, Some(catch_body))
         }
@@ -112,6 +120,6 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
     };
 
     Ok (
-        (input, (rule_name, RuleVariant {header, body, flags, catch_unknown_rule}))
+        (input, (rule_name, RuleVariant {header: input_header, parameter_header, body, flags, catch_unknown_rule}))
     )
 }

@@ -104,7 +104,6 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
                 // next portion to process is after the current rule definition
                 input = statement_end.to_string();
             } else {
-               // unsafe { ::std::intrinsics::breakpoint() }
                 // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
                 let new_input = rules[&name].match_sequence(statement_end, rules, &mut appleft)?;
                 // if this rule was just to be applied once, remove from definitions
@@ -184,7 +183,7 @@ fn repl() -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), ()>  {
-    //return process_file("input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e));
+    //return process_file("playground/input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e));
 
     let mut is_stepping = std::env::args().any(|s| s == "--step" || s == "-s");
 

@@ -1,0 +1,229 @@
+%: init_swirl {}
+%: groups_swirl {}
+%: 1wh {{' '}}
+%: 1wh {{'
+'}}
+%: newline {{'
+'}}
+%: 0wh {}
+%: nwh {}
+%: nwh {::1wh::nwh}
+%: 1nwh {::1wh::nwh}
+%: whitespace {::1wh}
+%: whitespaces {::1nwh}
+%: az {a} %: az {b} %: az {c} %: az {d} %: az {e} %: az {f} %: az {g} %: az {h} %: az {i} %: az {j} %: az {k} %: az {l} %: az {m} %: az {n} %: az {o} %: az {p} %: az {q} %: az {r} %: az {s} %: az {t} %: az {u} %: az {v} %: az {w} %: az {x} %: az {y} %: az {z}
+%: AZ {A} %: AZ {B} %: AZ {C} %: AZ {D} %: AZ {E} %: AZ {F} %: AZ {G} %: AZ {H} %: AZ {I} %: AZ {J} %: AZ {K} %: AZ {L} %: AZ {M} %: AZ {N} %: AZ {O} %: AZ {P} %: AZ {Q} %: AZ {R} %: AZ {S} %: AZ {T} %: AZ {U} %: AZ {V} %: AZ {W} %: AZ {X} %: AZ {Y} %: AZ {Z}
+%: aZ {::az}
+%: aZ {::AZ}
+%: 09 {0} %: 09 {1} %: 09 {2} %: 09 {3} %: 09 {4} %: 09 {5} %: 09 {6} %: 09 {7} %: 09 {8} %: 09 {9}
+%: specialchar {{'!'}}%: specialchar {{'"'}}%: specialchar {{'#'}}%: specialchar {{'$'}}%: specialchar {{'%'}}%: specialchar {{'&'}}%: specialchar {{'''}}%: specialchar {{'('}}%: specialchar {{')'}}%: specialchar {{'*'}}%: specialchar {{'+'}}%: specialchar {{','}}%: specialchar {{'-'}}%: specialchar {{'.'}}%: specialchar {{'/'}}%: specialchar {{':'}}%: specialchar {{';'}}%: specialchar {{'<'}}%: specialchar {{'='}}%: specialchar {{'>'}}%: specialchar {{'?'}}%: specialchar {{'@'}}%: specialchar {{'['}}%: specialchar {{'\'}}%: specialchar {{']'}}%: specialchar {{'^'}}%: specialchar {{'_'}}%: specialchar {{'`'}}%: specialchar {{'{'}}%: specialchar {{'|'}}%: specialchar {{'}'}}%: specialchar {{'~'}}
+%: alnum {::aZ}
+%: alnum {::09}
+%: alnum_ {_}
+%: alnum_ {::alnum}
+%: opaquechar {::specialchar}
+%: opaquechar {::alnum}
+%: anychar {::1wh}
+%: anychar {::opaquechar}
+%: remove_newlines {}
+%: remove_newlines {::not_end::remove_newline::remove_newlines}
+%: remove_newline {::anychar}
+%: remove_newline {::newline} {}
+%: not_end (not) {{'END INIT'}}
+%: (call) {::remove_newlines}
+
+%: uint {::09}
+%: uint {::09::uint}
+
+%: index_number {::uint th} {:}
+%: index_number {first} {1}
+%: index_number {second} {2}
+%: index_number {third} {3}
+
+%/: c_quote {"::c_quote_inner"}
+%/: c_quote_inner {}
+%/: c_quote_inner {::not_quote_char::c_quote_inner_1::c_quote_inner}
+%/: c_quote_inner_1 {::anychar}
+%/: c_quote_inner_1 {\:c:anychar} {:c}
+%/: not_quote_char (not) {"}
+
+%: c_ident {::alnum_}
+%: c_ident {::alnum_::c_ident}
+
+%: lean_comment.swirl 
+
+%: reflect.swirl 
+
+%: (call) {{'END INIT'}} {} END INIT
+
+/for all uses of ::nameless_rule below, flags aren't really supported. so maybe replace them with a checked ::unflagged_nameless_rule version./
+
+%: maybe_nameless_rule {} {{}}
+%: maybe_nameless_rule {::nameless_rule_arrow_notation}
+
+%: rule_combination {::seq_chain_combination}
+%: rule_combination {::or_chain_combination}
+
+    %: seq_chain_combination {::rule_combination_simple}
+    %: seq_chain_combination {::rule_combination_simple ::nwh ::seq_chain_combination}
+
+    %: or_chain_combination {::seq_chain_combination ::nwh or ::nwh ::seq_chain_combination}
+    %: or_chain_combination {::seq_chain_combination ::nwh or ::nwh ::or_chain_combination}
+
+    %: rule_combination_simple {::nameless_rule_arrow_notation}
+    %: rule_combination_simple {(::rule_combination)::rule_postfix_op}
+
+%: rule_postfix_op {}
+    %: rule_postfix_op {!}
+    %: rule_postfix_op {*}
+    %: rule_postfix_op {+}
+    %: rule_postfix_op {?}
+
+%: (call) {--::or_chain_combination} {<<<yes>>>}
+
+       --{b} or ({c} or {d})
+
+%: (call) {--::seq_chain_combination ::nwh or ::nwh ::seq_chain_combination} {<<<yes>>>}
+
+--{a} or {b} or ({c} or {d})
+
+%: (call) {--::or_chain_combination} {<<<yes>>>}
+
+--{a} or {b} or ({c} or {d})
+
+
+%: unfold {-combination(:r:nameless_rule_remove_arrow_notation) ::nwh -on(:prefix:c_ident) ::nwh .} {
+    %-: :prefix :r
+}
+
+    %: unfold {-combination((:r:rule_combination)) ::nwh -on(:prefix:c_ident) ::nwh .} {
+        %: (call) {'{::unfold}'} -combination(:r) -on(:prefix).
+    }
+
+    %: unfold {-combination((:r:rule_combination)?) ::nwh -on(:prefix:c_ident) ::nwh .} {
+        %-: :prefix {}
+        %-: :prefix {{'::'}:prefix{''}_maybe}
+        %: (call) {{'::unfold'}} -combination(:r) -on(:prefix{''}_maybe).
+    }
+
+    %: unfold_arg_postfix {::nwh} {_t}
+    %: unfold_arg_postfix {-postfix(:p:c_ident) ::nwh} {:p}
+
+    / an example sequence chain {first}({second})+ will be unfolded on "prefix" as follows:
+      first unfold the subrules:
+        %: prefix_t {first}
+        %: prefix_tt {second}
+        %: prefix_tt {second::prefix_tt}
+      then unfold the stem rule:
+        %: prefix {::prefix_t::prefix_tt} /
+
+    %: unfold {
+        -combination(:head:rule_combination_simple ::nwh :rest:seq_chain_combination)
+        -on(:prefix:c_ident) ::nwh .
+    } {
+        %: (call) {{'::unfold_seq_subrules'}} -combination(:head :rest) -on(:prefix{''}_s).
+        
+    }
+
+    %: unfold_seq_steminvocs {
+        -combination(:head:rule_combination_simple)
+        -on(:prefix:c_ident) ::nwh.
+    } {
+        {'::'}:prefix
+    }
+
+    %: unfold_seq_steminvocs {
+        -combination(:head:rule_combination_simple ::nwh :rest:seq_chain_combination)
+        -on(:prefix:c_ident) ::nwh.
+    } {
+        {'::'}:prefix %: (call) {::unfold_seq_steminvocs} -combination(:rest) -on(:prefix{''}s)
+    }
+
+
+    %: unfold_seq_stemrule {
+        -on(:prefix:c_ident) ; :invocs:unfold_seq_steminvocs 
+    } {
+        %: :prefix {:invocs} /okay, stop. we need parameters./
+    }
+
+    %: unfold_seq_subrules {
+        -combination(:head:rule_combination_simple)
+        -on(:prefix:c_ident) ::nwh .
+    } {
+        %: (call) {{'::unfold'}} -combination(:head) -on(:prefix).
+    }
+
+    %: unfold_seq_subrules {
+        -combination(:head:rule_combination_simple ::nwh :rest:seq_chain_combination)
+        -on(:prefix:c_ident) ::nwh .
+    } {
+        %: (call) {{'::unfold'}} -combination(:head) -on(:prefix).
+        %: (call) {{'::unfold_seq_subrules'}} -combination(:rest) -on(:prefix{''}s).
+    }
+
+    %: unfold {
+        -combination(:head:seq_chain_combination ::nwh or ::nwh :tail:seq_chain_combination) ::nwh
+        -on(:prefix:c_ident) ::nwh
+        :postfix:unfold_arg_postfix ::nwh .
+    } {
+        %: (call) {'{::unfold}'} -combination(:tail) -on(:prefix{''}:postfix{''}t).
+        %: (call) {'{::unfold}'} -combination(:head) -on(:prefix{''}:postfix).
+        %-: :prefix {{'::'}:prefix{''}:postfix{''}t}
+        %-: :prefix {{'::'}:prefix{''}:postfix}
+    }
+
+    %: unfold {
+        -combination(:head:seq_chain_combination ::nwh or ::nwh :rest:or_chain_combination) ::nwh 
+        -on(:prefix:c_ident) ::nwh
+        :postfix:unfold_arg_postfix
+    } {
+        %: (call) {'{::unfold}'} -combination(:rest) -on(:prefix) -postfix(:postfix{''}t).
+        %: (call) {'{::unfold}'} -combination(:head) -on(:prefix{''}:postfix).
+        %-: :prefix {{'::'}:prefix{''}:postfix}
+    }
+
+%: syntax_structured_rule {
+    %: ::nwh {'structured:'} ::nwh :ruleName:c_ident ::nwh = ::nwh
+        :root:rule_combination
+} {
+    %: (call) {'{::unfold}'} 
+        -combination(:root)
+        -on(:ruleName).
+}
+
+%: syntax_structured_rule_old {
+    %: ::nwh {'structured:'} ::nwh :ruleName:c_ident ::nwh = ::nwh
+        :begin:maybe_nameless_rule ::nwh
+        ( ::nwh :repeating:or_combination ::nwh )* ::nwh
+        :end:nameless_rule_arrow_notation
+} {
+    %: :ruleName{''}_structured_begin :begin
+    %: :ruleName{''}_structured_end :end
+    %: :ruleName{''}_structured_not_end (not) :end
+
+    %: (call) {'{::unfold}'} 
+        -combination(:repeating)
+        -on(:ruleName{''}_structured_repeat_1)
+
+    %: :ruleName{''}_structured_repeat {}
+    %: :ruleName{''}_structured_repeat {
+        {'::'}:ruleName{''}_structured_not_end
+        {'::'}:ruleName{''}_structured_repeat_1
+        {'::'}:ruleName{''}_structured_repeat
+    }
+
+    %: :ruleName {
+        {'::'}:ruleName{''}_structured_begin 
+        {'::'}:ruleName{''}_structured_repeat 
+        {'::'}:ruleName{''}_structured_end
+    }
+}
+
+%: apply_structured_rules {}
+%: apply_structured_rules {::apply_structured_rules_1::apply_structured_rules}
+%: apply_structured_rules_1 {::anychar}
+%: apply_structured_rules_1 {::syntax_structured_rule}
+
+%: (call) {--::syntax_structured_rule}
+
+--%: structured: c_quote = {a} -> {b} or ({c} -> {d})? or ({x} or (({y})?)?)

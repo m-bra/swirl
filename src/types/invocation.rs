@@ -2,23 +2,21 @@ use std::collections::{BTreeMap, HashMap};
 use crate::*;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct RuleInvocation(pub String, pub String);
-
-impl RuleInvocation {
-    pub fn new(result_var: impl Into<String>, rule: impl Into<String>) -> RuleInvocation {
-        RuleInvocation(result_var.into(), rule.into())
-    }
-    pub fn result_var(&self) -> &str {&self.0}
-    pub fn rule(&self) -> &str {&self.1}
+pub enum Invocation {
+    RuleInvocation(String, String, InvocationString),
+    VarInvocation(String)
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
-pub struct VarInvocation(pub String);
-
-impl VarInvocation {
-    pub fn new(name: impl Into<String>) -> VarInvocation {
-        VarInvocation(name.into())
+impl Invocation {
+    pub fn new_rule_invocation(result_var: impl Into<String>, rule: impl Into<String>) -> Invocation {
+        Invocation::RuleInvocation(result_var.into(), rule.into(), InvocationString::empty())
     }
 
-    pub fn var_name(&self) -> &str {&self.0}
+    pub fn new_rule_invoc_with_param(result_var: impl Into<String>, rule: impl Into<String>, parameter: InvocationString) -> Invocation {
+        Invocation::RuleInvocation(result_var.into(), rule.into(), parameter)
+    }
+
+    pub fn new_var_invocation(name: impl Into<String>) -> Invocation {
+        Invocation::VarInvocation(name.into())
+    }
 }

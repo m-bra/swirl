@@ -34,3 +34,13 @@ impl<T: Clone> Clone for CloneUnsafeCell<T> {
         CloneUnsafeCell::new((*self.get()).clone())
     }}
 }
+
+impl <T: PartialEq> PartialEq for CloneUnsafeCell<T> {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe {
+            (&*self.get()).eq(&*other.get())
+        }
+    }
+}
+
+impl <T: Eq> Eq for CloneUnsafeCell<T> {}

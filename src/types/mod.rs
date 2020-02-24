@@ -4,8 +4,8 @@ use crate::*;
 mod invocation;
 pub use invocation::*;
 
-mod rulepart;
-pub use rulepart::*;
+mod invocation_string;
+pub use invocation_string::*;
 
 mod rule_variant;
 pub use rule_variant::*;
