@@ -183,7 +183,8 @@ fn repl() -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), ()>  {
-    //return process_file("playground/input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e));
+    //unsafe { ::std::intrinsics::breakpoint() }
+    //return process_file("input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e));
 
     let mut is_stepping = std::env::args().any(|s| s == "--step" || s == "-s");
 

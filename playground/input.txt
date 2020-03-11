@@ -1,5 +1,2 @@
 
-%: heyjude ({'dont let me down'}) {hello} -> {bye}hjkh
-%: heyjude ({'dont make it bad'}) {helloo} -> {byee}adsfs
-
-%: {:h:heyjude({'dont let me down'})} -> {:h} hello
+%: playground/init.swirl

@@ -95,31 +95,39 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
 
     // {parameter header} {input header with :rule:invocation.s} -> {body with :var.s} (catch unknown rule) {body with :var.s}
 
-    let (input, parameter_header) = match_invocation_string_def(input, '(', ')')?;
+    let symbolic_whitespace = WhiteSpaceHandling::Substitute(Invocation::new_rule_invocation("", "swirl_inserted_whitespace"));
+
+    let (input, parameter_header) = match_invocation_string_def(input, '(', ')', &symbolic_whitespace)?;
     let input = match_whitespaces(input)?;
 
     let header_start = input;
-    let (input, input_header) = match_invocation_string_def(input, '{', '}')?;
+    let (input, input_header) = match_invocation_string_def(input, '{', '}', &symbolic_whitespace)?;
     let input_header = input_header.ok_or_else(|| MatchError::expected("Rule header", header_start))?;
     let input = match_whitespaces(input)?;
 
-    let input = match_str(input, "->")?;
-    let input = match_whitespaces(input)?;
-
-    let (input, body) = match_invocation_string_def(input, '{', '}')?;
-    let input = match_whitespaces(input)?;
-    let (input, catch_unknown_rule) = match match_str(input, "(catch unknown rule)") {
+    match match_str(input, "->") {
+        Err(_) => Ok((input, (rule_name, RuleVariant {header: input_header, parameter_header, body: None, flags, catch_unknown_rule: None}))),
         Ok(input) => {
             let input = match_whitespaces(input)?;
-            let catch_body_start = input;
-            let (input, catch_body) = match_invocation_string_def(input, '{', '}')?;
-            let catch_body = catch_body.ok_or_else(|| MatchError::expected("Catch Body", catch_body_start))?;
-            (input, Some(catch_body))
-        }
-        Err(_) => (input, None)
-    };
 
-    Ok (
-        (input, (rule_name, RuleVariant {header: input_header, parameter_header, body, flags, catch_unknown_rule}))
-    )
+            let (input, body) = match_invocation_string_def(input, '{', '}', &WhiteSpaceHandling::TrimLineBegin)?;
+            let body = body.ok_or(MatchError::expected("rule body", input))?;
+
+            let input = match_whitespaces(input)?;
+            let (input, catch_unknown_rule) = match match_str(input, "(catch unknown rule)") {
+                Ok(input) => {
+                    let input = match_whitespaces(input)?;
+                    let catch_body_start = input;
+                    let (input, catch_body) = match_invocation_string_def(input, '{', '}', &WhiteSpaceHandling::TrimLineBegin)?;
+                    let catch_body = catch_body.ok_or_else(|| MatchError::expected("Catch Body", catch_body_start))?;
+                    (input, Some(catch_body))
+                }
+                Err(_) => (input, None)
+            };
+        
+            Ok (
+                (input, (rule_name, RuleVariant {header: input_header, parameter_header, body: Some(body), flags, catch_unknown_rule}))
+            )
+        }
+    }
 }

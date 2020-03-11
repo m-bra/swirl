@@ -54,7 +54,7 @@ impl RuleVariant {
     pub fn try_match<'a>(&self, input: &'a str, param: &str, rules: &Rules, name: impl AsRef<str>, variant_index: usize) -> MatchResult<(&'a str, String)> { 
         (|| {
 
-            //unsafe { ::std::intrinsics::breakpoint() }
+           // unsafe { ::std::intrinsics::breakpoint() }
 
         let name = name.as_ref();
 

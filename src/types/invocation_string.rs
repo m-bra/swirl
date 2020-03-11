@@ -120,26 +120,6 @@ fn test_iter_last() {
     assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("23", &[][..])))
 }
 
- pub fn parse_header(s: impl AsRef<str>) -> MatchResult<InvocationString> {
-    let added_braces = format!("{{{}}}", s.as_ref());
-    let (rest, header) = match_invocation_string_def(&added_braces, '{', '}')?;
-    if rest.is_empty() {
-        Ok(header.unwrap())
-    } else {
-        Err(MatchError::expected("end of string", rest))
-    }
-}
-
-pub fn parse_body(s: impl AsRef<str>) -> MatchResult<InvocationString> {
-    let added_braces = format!("{{{}}}", s.as_ref());
-    let (rest, header) = match_invocation_string_def(&added_braces, '{', '}')?;
-    if rest.is_empty() {
-        Ok(header.unwrap())
-    } else {
-        Err(MatchError::expected("end of string", rest))
-    }
-}
-
 #[test]
 fn test_invocation_string_iter() {
     let ab = Invocation::new_rule_invocation("a", "b");
@@ -159,7 +139,7 @@ fn test_invocation_string_iter() {
         vec![("", &[ab][..]), ("12", &[cd, ef][..]), ("34", &[][..])]
     );
 
-    let header = match_invocation_string_def("{::expr {' or '} ::or}", '{', '}')  .unwrap().1.unwrap();
+    let header = match_invocation_string_def("{::expr {' or '} ::or}", '{', '}', WhiteSpaceHandling::Remove)  .unwrap().1.unwrap();
 
     let expr = Invocation::new_rule_invocation("", "expr");
     let or = Invocation::new_rule_invocation("", "or");
@@ -188,6 +168,8 @@ impl InvocationStringBuilder {
                 .push(invoc);
         }
     }
+
+    
 
     pub fn seal(self) -> InvocationString {self.0}
 }
