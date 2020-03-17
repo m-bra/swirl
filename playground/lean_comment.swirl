@@ -10,8 +10,6 @@
 %: remove_comments {}
 %: remove_comments {::remove_comments_1::remove_comments}
 %: remove_comments_1 {::anychar}
-%: remove_comments_1 {::line_comment} {}
-
-
+%: remove_comments_1 {::line_comment}
 
 %: {::remove_comments}

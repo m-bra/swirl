@@ -32,4 +32,9 @@ impl RuleVariant {
     pub fn deep_call(&self) -> bool {
         !self.shallow_call()
     }
+
+    // since this is called often, it might be worth it to optimize this 
+    pub fn is_any(&self) -> bool {
+        self.flags.contains("any")
+    }
 }

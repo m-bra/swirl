@@ -188,36 +188,53 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, wrap_begin: char, wrap_
     let mut level = 1;
     let beginning = input;
 
-    // whether the incoming text is just whitespace followed by wrap_end or newline
+    // whether the incoming text is just whitespace followed by wrap_end [or newline]
+    // special case: if input[0] == wrap_end, then false (see [1])
     let is_whitespace_end = |input: &'a Input, no_new_line: bool| {
-        let end_index = match input.find('\n') {
+        let is_whitespace_until = |index| input[..index].chars().all(char::is_whitespace);
+        let is_1whitespace_until = |index| (input[..index].len() > 0 /*[1]*/) && is_whitespace_until(index);
+
+        match input.find('\n') {
             None => match input.find(wrap_end) {
-                Some(end_index) => end_index,
-                None => return false,
+                Some(end_index) => is_whitespace_until(end_index),
+                None => false,
             },
             Some(newline_index) => match input.find(wrap_end) {
-                Some(wrap_end_index) if wrap_end_index < newline_index => wrap_end_index,
-                Some(wrap_end_index) if no_new_line => wrap_end_index,
-                Some(_) => newline_index,
-                None => return false 
+                Some(wrap_end_index) if no_new_line => is_1whitespace_until(wrap_end_index),
+                Some(wrap_end_index) => is_whitespace_until(newline_index) || is_1whitespace_until(wrap_end_index),
+                None => false 
             }
-        };
-        input[..end_index].chars().all(char::is_whitespace)
+        }
     };
+
+              //}        // }           // * }
+
+    //N        x         true           
+
+    // N
+    
+    // * N
+    
+
+    breakpoint();
 
     loop { input =
         if let Ok((input, invo)) = match_invocation(input) {
             invocation_string.add_invoc(invo);
             input
-        } else if whitespace_handling.trim_begin_end() && level == 1 && is_whitespace_end(input, true) {
+        }
+        // end of definition 
+        else if whitespace_handling.trim_begin_end() && level == 1 && is_whitespace_end(input, true) {
             input = match_whitespaces(input)?;
             level -= 1;
             break;
-        } else if whitespace_handling.trim_begin_end() && is_whitespace_end(input, false) {
+        }
+        // beginning of definition or between lines
+        else if whitespace_handling.trim_begin_end() && is_whitespace_end(input, false) {
             // this is not only skipping until line end, but also all the leading whitespace of the next line
             // which suits are quite very well :))
             if let WhiteSpaceHandling::Substitute(invoc) = whitespace_handling {
-                let is_end = is_whitespace_end(input, true);
+                let is_end = is_whitespace_end(input, true) && level == 1;
                 if input != beginning && !is_end {
                     invocation_string.add_invoc(invoc.clone());                    
                 }

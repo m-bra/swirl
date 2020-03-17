@@ -43,3 +43,15 @@ impl<T: SubAssign> SubAssign<T> for MaybeInf<T> where T: Eq {
         }
     }
 }
+
+#[cfg(debug_assertions)]
+pub fn breakpoint() {
+    unsafe {
+        ::std::intrinsics::breakpoint();
+    }
+}
+
+#[cfg(not(debug_assertions))]
+pub fn breakpoint() {
+    ;
+}

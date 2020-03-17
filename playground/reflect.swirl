@@ -1,6 +1,8 @@
 %: (call) {::groups_swirl::lean_comment_swirl}
 %: reflect_swirl {}
 
+/warning: i believe ::rule_header to not work with the following header for example: {this { is } a header}/
+
 %: quotation.swirl
 
 %: rule_invocation {::swirl_rule_invocation}
@@ -14,7 +16,7 @@
 %: not_part_end (not) {{'}'}}
 
 %: rule_header {::swirl_rule_header}
-%: swirl_rule_header { { ::rule_header_inner } }
+%: swirl_rule_header {{::rule_header_inner}}
 %: rule_header_inner {}
 %: rule_header_inner {::not_part_end::rule_header_inner_1::rule_header_inner}
 %: rule_header_inner_1 {::rule_part_inner_1}
@@ -35,25 +37,23 @@
 %: maybe_rule_body {::rule_body}
 
 %: maybe_catch_body {}
-%: maybe_catch_body {(::nwh.catch::nwh. unknown::nwh. rules::nwh)::nwh ::rule_body}
+%: maybe_catch_body {(::nwh{''}catch unknown rules::nwh) ::rule_body}
 
 %: flag {(::c_ident)}
 %: flags {}
 %: flags {::flag::nwh::flags}
 
 %: rule {::swirl_rule}
-%: swirl_rule {%.: ::nwh ::ident ::nwh ::untagged_nameless_rule}
+%: swirl_rule {{'%:'}::nwh{''}::ident::nwh::untagged_nameless_rule}
 
 %: nameless_rule {::untagged_nameless_rule}
-%: tagged_nameless_rule {(rule) ::nwh ::untagged_nameless_rule}
-%: untagged_nameless_rule {::flags ::nwh ::rule_header ::nwh ::maybe_rule_body ::nwh ::maybe_catch_body}
+%: tagged_nameless_rule {(rule)::nwh::untagged_nameless_rule}
+%: untagged_nameless_rule {::flags::nwh::rule_header::nwh::maybe_rule_body::nwh::maybe_catch_body}
 
-%: nameless_rule_arrow_notation {::flags ::nwh ::rule_header}
-%: nameless_rule_arrow_notation {::flags ::nwh ::rule_header ::nwh -> ::nwh ::rule_body ::nwh ::maybe_catch_body}
+%: nameless_rule_arrow_notation {::flags::nwh::rule_header}
+%: nameless_rule_arrow_notation {::flags::nwh::rule_header::nwh->::nwh::rule_body::nwh::maybe_catch_body}
 
-%: nameless_rule_remove_arrow_notation {::flags ::nwh ::rule_header}
+%: nameless_rule_remove_arrow_notation {::flags::nwh::rule_header}
 %: nameless_rule_remove_arrow_notation {
-    :a:flags :b:nwh :c:rule_header :d:nwh -> :e:nwh :f:rule_body :g:nwh :h:maybe_catch_body
-} {
-    :a :b :c :d :e :f :g :h
+    ::flags::nwh::rule_header::nwh->::nwh::rule_body::nwh::maybe_catch_body
 }

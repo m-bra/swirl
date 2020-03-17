@@ -106,7 +106,16 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
     let input = match_whitespaces(input)?;
 
     match match_str(input, "->") {
-        Err(_) => Ok((input, (rule_name, RuleVariant {header: input_header, parameter_header, body: None, flags, catch_unknown_rule: None}))),
+        Err(_) => {
+            let missing_arrow_warning: MatchResult<()> = try {
+                let input = match_whitespaces(input)?;
+                match_str(input, "{")?;
+            };
+            if missing_arrow_warning.is_ok() {
+                println!("Warning: Rule '{}' is probably missing an arrow in one of its variants", rule_name);
+            }
+            Ok((input, (rule_name, RuleVariant {header: input_header, parameter_header, body: None, flags, catch_unknown_rule: None})))
+        },
         Ok(input) => {
             let input = match_whitespaces(input)?;
 

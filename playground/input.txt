@@ -1,2 +1,4 @@
-
-%: playground/init.swirl
+%: init.swirl
+%: lean_comment.swirl
+%: reflect.swirl
+%: structured.swirl

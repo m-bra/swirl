@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 #![feature(core_intrinsics)]
+#![feature(try_blocks)]
 
 
 use regex::Regex;
@@ -182,10 +183,15 @@ fn repl() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn main() -> Result<(), ()>  {
-    //unsafe { ::std::intrinsics::breakpoint() }
-    //return process_file("input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e));
+#[cfg(debug_assertions)]
+fn main() -> Result<(), ()> {
+    println!(" -- Debug mode --");
+    unsafe { ::std::intrinsics::breakpoint() }
+    return process_file("input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e))
+}
 
+#[cfg(not(debug_assertions))]
+fn main() -> Result<(), ()>  {
     let mut is_stepping = std::env::args().any(|s| s == "--step" || s == "-s");
 
     let (steps, remove_defs) = if is_stepping {
