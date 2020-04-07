@@ -1,0 +1,15 @@
+%: (call) {::groups_swirl}
+%: lean_comment_swirl {}
+%: lean_comments_swirl {}
+
+%: line_comment {/::anytextline/}
+%: anytextline {}
+%: anytextline {::not_slash::anychar::anytextline}
+%: not_slash (not) {/}
+
+%: remove_comments {}
+%: remove_comments {::remove_comments_1::remove_comments}
+%: remove_comments_1 {::anychar}
+%: remove_comments_1 {::line_comment}
+
+%: {::remove_comments}

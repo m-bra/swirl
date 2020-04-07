@@ -1,0 +1,46 @@
+%: init_swirl {}
+%: groups_swirl {}
+%: 1wh {{' '}}
+%: 1wh {{'
+'}}
+%: newline {{'
+'}}
+%: 0wh {}
+%: nwh {}
+%: nwh {::1wh::nwh}
+%: 1nwh {::1wh::nwh}
+%: whitespace {::1wh}
+%: whitespaces {::1nwh}
+%: swirl_inserted_whitespace {::whitespaces}
+%: az {a} %: az {b} %: az {c} %: az {d} %: az {e} %: az {f} %: az {g} %: az {h} %: az {i} %: az {j} %: az {k} %: az {l} %: az {m} %: az {n} %: az {o} %: az {p} %: az {q} %: az {r} %: az {s} %: az {t} %: az {u} %: az {v} %: az {w} %: az {x} %: az {y} %: az {z}
+%: AZ {A} %: AZ {B} %: AZ {C} %: AZ {D} %: AZ {E} %: AZ {F} %: AZ {G} %: AZ {H} %: AZ {I} %: AZ {J} %: AZ {K} %: AZ {L} %: AZ {M} %: AZ {N} %: AZ {O} %: AZ {P} %: AZ {Q} %: AZ {R} %: AZ {S} %: AZ {T} %: AZ {U} %: AZ {V} %: AZ {W} %: AZ {X} %: AZ {Y} %: AZ {Z}
+%: aZ {::az}
+%: aZ {::AZ}
+%: 09 {0} %: 09 {1} %: 09 {2} %: 09 {3} %: 09 {4} %: 09 {5} %: 09 {6} %: 09 {7} %: 09 {8} %: 09 {9}
+%: specialchar {{'!'}}%: specialchar {{'"'}}%: specialchar {{'#'}}%: specialchar {{'$'}}%: specialchar {{'%'}}%: specialchar {{'&'}}%: specialchar {{'''}}%: specialchar {{'('}}%: specialchar {{')'}}%: specialchar {{'*'}}%: specialchar {{'+'}}%: specialchar {{','}}%: specialchar {{'-'}}%: specialchar {{'.'}}%: specialchar {{'/'}}%: specialchar {{':'}}%: specialchar {{';'}}%: specialchar {{'<'}}%: specialchar {{'='}}%: specialchar {{'>'}}%: specialchar {{'?'}}%: specialchar {{'@'}}%: specialchar {{'['}}%: specialchar {{'\'}}%: specialchar {{']'}}%: specialchar {{'^'}}%: specialchar {{'_'}}%: specialchar {{'`'}}%: specialchar {{'{'}}%: specialchar {{'|'}}%: specialchar {{'}'}}%: specialchar {{'~'}}
+%: alnum {::aZ}
+%: alnum {::09}
+%: alnum_ {_}
+%: alnum_ {::alnum}
+%: anychar (any) {}
+%: opaquechar {::not_whitespace::anychar}
+%: not_whitespace (not) {::whitespace}
+%: remove_newlines {}
+%: remove_newlines {::not_end::remove_newline::remove_newlines}
+%: remove_newline {::anychar}
+%: remove_newline {::newline} -> {}
+%: not_end (not) {{'END_INIT'}}
+%: (call) {::remove_newlines}
+
+%: uint {::09}
+%: uint {::09::uint}
+
+%: index_number {::uint th} -> {:}
+%: index_number {first} -> {1}
+%: index_number {second} -> {2}
+%: index_number {third} -> {3}
+
+%: c_ident {::alnum_}
+%: c_ident {::alnum_::c_ident}
+
+%: (call) {END_{''}INIT} -> {} END_INIT

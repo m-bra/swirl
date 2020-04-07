@@ -21,8 +21,8 @@ mod example_input;
 #[macro_use]
 extern crate lazy_static;
 
-pub const ESCAPE_BRACE_OPEN: &str = "{'";
-pub const ESCAPE_BRACE_CLOSE: &str = "'}";
+pub const ESCAPE_BRACE_OPEN: &str = "'";
+pub const ESCAPE_BRACE_CLOSE: &str = "`";
 pub const RULE_INVOCATION_CHAR: char = ':';
 
 static mut INDENT: usize = 0;
