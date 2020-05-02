@@ -1,9 +1,7 @@
-%: (call) {::groups_swirl::lean_comment_swirl}
+%: (call) {::groups_swirl::lean_comment_swirl::quotation_swirl}
 %: reflect_swirl {}
 
 /warning: i believe ::rule_header to not work with the following header for example: {this { is } a header}/
-
-%: quotation.swirl
 
 %: rule_invocation {::swirl_rule_invocation}
 %: swirl_rule_invocation {

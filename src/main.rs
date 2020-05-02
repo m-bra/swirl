@@ -76,6 +76,10 @@ pub fn match_statement(input: &Input) -> MatchResult<(&Input, (String, Option<Ru
     }
 }
 
+fn init_rules() -> &mut Rules {
+    let mut rules = HashMap::new();
+    rules.insert("", v: V)
+}
 
 pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remove_defs: bool) -> MatchResult<String> {
     let mut result = String::new();

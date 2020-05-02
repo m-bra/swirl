@@ -18,3 +18,4 @@ clean:
 .PHONY: install
 install:
 	cp -r bin/ $(INSTALL_DIR)
+	cp -r lib/ $(INSTALL_DIR)
