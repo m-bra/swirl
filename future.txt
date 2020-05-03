@@ -1,3 +1,6 @@
 
  * Implement folding of arbitrary text through private unicode symbols.
  * compile rules and add as dynamic modules on-the-fly
+ * isolate the meaning and syntax of what is represented by '%:': the entry point for swirl syntax.
+   make it flexible.
+   make simple tool which safely changes some $file o $file.swirl, escaping occurences of '%:' or whatever

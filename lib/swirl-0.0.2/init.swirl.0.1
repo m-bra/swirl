@@ -1,0 +1,87 @@
+%: init_swirl {}
+%: init_swirl_version_0_1_0 {}
+%: groups_swirl {}
+%: 1wh {{' '}}
+%: 1wh {{'
+'}}
+%: newline {{'
+'}}
+%: 0wh {}
+%: nwh {}
+%: nwh {::1wh::nwh}
+%: 1nwh {::1wh::nwh}
+%: whitespace {::1wh}
+%: whitespaces {::1nwh}
+%: swirl_inserted_whitespace {::whitespaces}
+%: az {a} %: az {b} %: az {c} %: az {d} %: az {e} %: az {f} %: az {g} %: az {h} %: az {i} %: az {j} %: az {k} %: az {l} %: az {m} %: az {n} %: az {o} %: az {p} %: az {q} %: az {r} %: az {s} %: az {t} %: az {u} %: az {v} %: az {w} %: az {x} %: az {y} %: az {z}
+%: AZ {A} %: AZ {B} %: AZ {C} %: AZ {D} %: AZ {E} %: AZ {F} %: AZ {G} %: AZ {H} %: AZ {I} %: AZ {J} %: AZ {K} %: AZ {L} %: AZ {M} %: AZ {N} %: AZ {O} %: AZ {P} %: AZ {Q} %: AZ {R} %: AZ {S} %: AZ {T} %: AZ {U} %: AZ {V} %: AZ {W} %: AZ {X} %: AZ {Y} %: AZ {Z}
+%: aZ {::az}
+%: aZ {::AZ}
+%: 09 {0} %: 09 {1} %: 09 {2} %: 09 {3} %: 09 {4} %: 09 {5} %: 09 {6} %: 09 {7} %: 09 {8} %: 09 {9}
+%: specialchar {{'!'}}%: specialchar {{'"'}}%: specialchar {{'#'}}%: specialchar {{'$'}}%: specialchar {{'%'}}%: specialchar {{'&'}}%: specialchar {{'''}}%: specialchar {{'('}}%: specialchar {{')'}}%: specialchar {{'*'}}%: specialchar {{'+'}}%: specialchar {{','}}%: specialchar {{'-'}}%: specialchar {{'.'}}%: specialchar {{'/'}}%: specialchar {{':'}}%: specialchar {{';'}}%: specialchar {{'<'}}%: specialchar {{'='}}%: specialchar {{'>'}}%: specialchar {{'?'}}%: specialchar {{'@'}}%: specialchar {{'['}}%: specialchar {{'\'}}%: specialchar {{']'}}%: specialchar {{'^'}}%: specialchar {{'_'}}%: specialchar {{'`'}}%: specialchar {{'{'}}%: specialchar {{'|'}}%: specialchar {{'}'}}%: specialchar {{'~'}}
+%: alnum {::aZ}
+%: alnum {::09}
+%: alnum_ {_}
+%: alnum_ {::alnum}
+%: anychar (any) {}
+%: opaquechar {::not_whitespace::anychar}
+%: not_whitespace (not) {::whitespace}
+%: remove_newlines {}
+%: remove_newlines {::not_end::remove_newline::remove_newlines}
+%: remove_newline {::anychar}
+%: remove_newline {::newline} -> {}
+%: not_end (not) {{'END_INIT'}}
+%: (call) {::remove_newlines}
+
+%: uint {::09}
+%: uint {::09::uint}
+
+%: index_number {::uint th} -> {:}
+%: index_number {first} -> {1}
+%: index_number {second} -> {2}
+%: index_number {third} -> {3}
+
+%: c_ident {::alnum_}
+%: c_ident {::alnum_::c_ident}
+
+
+%: alnum_s {::c_ident}
+
+/ note to swirl: this pattern can be optimized easily and effectively. /
+%: rest {}
+%: rest {::anychar::rest}
+
+%: not (not) (:r:rest) {:r}
+
+%: until_space {}
+%: until_space {::not(::whitespace)::anychar::until_space}
+
+%: until_str(:s:rest) {}
+%: until_str(:s:rest) {::not(::s)::anychar::until_space}
+
+/ a wcomma is a string of the form \s*\,\s+ 
+  and is not a usual comma.
+  e.g. with this distinction the two punctuations have two different meanings:
+  crab,goyle , have eaten. /
+%: until_wcomma {::wcomma}
+%: until_wcomma {::not_wcomma::anychar::until_wcomma}
+%: not_wcomma (not) {::wcomma}
+%: wcomma {::nwh,::1nwh}
+
+%: balanced_string(:begin:until_space :end:until_space)
+   {:begin`'::balanced_string_inner(:begin :end)`':end}
+%: balanced_string_inner(:b:until_space :e:until_space) {}
+%: balanced_string_inner(:b:until_space :e:until_space)
+   {:b`'::balanced_string_inner(:b :e)`':e`'::balanced_string_inner(:b :e)}
+%: balanced_string_inner(:b:until_space :e:until_space)
+   {::non_delimiter(:b :e)::balanced_string_inner(:b :e)}
+
+%: non_delimiter(:begin:until_space :end:until_space) {::not(:begin)::not(:end)}
+%: non_delim_text(:begin:until_space :end:until_space) {::unimplemented}
+
+%: swirl_quote {::balanced_string(::unimplemented)}
+
+%: throw {::this_rule_promises_not_to_exist}
+%: unimplemented {::throw}
+
+%: (call) {END_{''}INIT} -> {} END_INIT
