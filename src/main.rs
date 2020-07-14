@@ -76,9 +76,21 @@ pub fn match_statement(input: &Input) -> MatchResult<(&Input, (String, Option<Ru
     }
 }
 
-fn init_rules() -> &mut Rules {
+fn init_rules() -> Rules {
     let mut rules = HashMap::new();
-    rules.insert("", v: V)
+    rules.insert("swirl_default_call_explicit_syntax".to_string(), {
+        Rule::new("swirl_default_call_explicit_syntax".to_string())
+            .variant(RuleVariant::empty())
+    });
+    rules.insert("swirl_feature_undefine_rule`".to_string(), {
+        Rule::new("swirl_feature_undefine_rule".to_string())
+            .variant(RuleVariant::empty())
+    });
+    rules.insert("swirl_version_0_0_3`".to_string(), {
+        Rule::new("swirl_version_0_0_3".to_string())
+            .variant(RuleVariant::empty())
+    });
+    rules
 }
 
 pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remove_defs: bool) -> MatchResult<String> {
@@ -98,24 +110,31 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
             result.push_str(&statement_begin[..(statement_begin.len() - statement_end.len())]);
         }
 
-        // add variant to definitions
+        // add variant to definitions (or remove) (perhaps call it)
         if let Some(variant) = maybe_variant {
-            let once = variant.flags.contains("call");
             let name = || name.clone();
-            rules.entry(name()).or_insert(Rule::new(name())).variants.push(variant);
+            let rule_entry = rules.entry(name()).or_insert(Rule::new(name()));
             let name = name();
 
-            if !name.is_empty() {
-                // next portion to process is after the current rule definition
-                input = statement_end.to_string();
+            if variant.is_undefine() {
+                rule_entry.variants.clear();
             } else {
-                // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
-                let new_input = rules[&name].match_sequence(statement_end, rules, &mut appleft)?;
-                // if this rule was just to be applied once, remove from definitions
-                if once {
-                    rules.get_mut(&name).unwrap().variants.pop().unwrap();
+                rule_entry.variants.push(variant.clone());
+
+                // empty name means invocation
+                if !name.is_empty() {
+                    // next portion to process is after the current rule definition
+                    input = statement_end.to_string();
+                } else {
+                    // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
+                    let new_input = rules[&name].match_sequence(statement_end, rules, &mut appleft)?;
+                    // if this rule was just to be applied once, remove from definitions
+                    if variant.shallow_call() {
+                        rules.get_mut(&name).unwrap().variants.pop().unwrap();
+                    }
+                    input = new_input;
                 }
-                input = new_input;
+
             }
         }
         // invoke file
@@ -137,7 +156,7 @@ fn process_file(target: &str, steps: MaybeInf<u32>, remove_defs: bool) -> Result
     let mut buffer = String::new();
     File::open(&target)?.read_to_string(&mut buffer)?;
 
-    let result = process(&buffer, &mut HashMap::new(), steps, remove_defs)?;
+    let result = process(&buffer, &mut init_rules(), steps, remove_defs)?;
 
     File::create(format!("{}.out", target))?.write(result.as_bytes())?;
 
@@ -207,7 +226,7 @@ fn main() -> Result<(), ()>  {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer)
         .map_err(|e| eprintln!("{}", e))?;
-    let result = process(&buffer, &mut HashMap::new(), steps, remove_defs)
+    let result = process(&buffer, &mut init_rules(), steps, remove_defs)
         .map_err(|e| eprintln!("{}", e))?;
     println!("{}", result);
     Ok(())
@@ -219,7 +238,7 @@ fn test_input() {
         let mut buffer = String::new();
         File::open("testinput.txt")?.read_to_string(&mut buffer)?;
 
-        let result = process(&buffer, &mut HashMap::new(), MaybeInf::Infinite, true)?;
+        let result = process(&buffer, &mut init_rules(), MaybeInf::Infinite, true)?;
         let last_line = result.lines().last().unwrap();
         assert_eq!(last_line, "success: testescape.)");
 

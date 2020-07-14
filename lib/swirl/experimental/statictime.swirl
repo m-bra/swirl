@@ -1,0 +1,114 @@
+%: (call) {::swirl_version_0_0_3}
+%: (call) {::swirl_feature_undefine_rule}
+%: (call) {::swirl_default_call_explicit_syntax}
+
+/ question//todo: in parameter definitions, unnamed binds should not be allowed. is that the case? /
+
+%: /usr/local/lib/swirl/init.swirl.0.1
+%: /usr/local/lib/swirl/lean_comment.swirl
+%: /usr/local/lib/swirl/experimental/c_syntax.swirl
+%: /usr/local/lib/swirl/experimental/metatime.swirl
+
+/' 
+
+   $ the "object" feature in the C language is quickly and human-interwoven given here*:
+  
+   %: objectrule {object //some shit with e:entries and all that//} {
+      //'some struc that has all fields set, with e:entries as names.`//
+   }
+
+ .... general confusion .. . 
+
+  declare(cpp_language, "feature", object {
+      
+  }); /
+
+
+//////////////////////////////////////////
+/////////////////////////////////////////
+
+%: statictime_word {::until_space}
+
+%: statictime_block {
+    extern ::c_string(statictime) {
+        :s:statictime_statements
+    }
+} -> {
+   :s
+}
+
+%: {::metatime_eval(
+   create namespace statictime_block_workspace
+   toplevel statictime_block (work at )
+)}
+
+%: statictime_statements {}
+%: statictime_statements {::statictime_statement}
+%: statictime_statements {::statictime_statement::whitespaces::statictime_statements}
+
+%: statictime_statement {
+   ::statictime_valbind
+}
+
+%: statictime_valbind {
+   / values can have "titles" (like in real life Dr., Prof, whatever...) that work like "value types". /
+   / if a value has a title, the title must always be named on access of the value,
+     so that the accessor is deliberate about the type of the value exchange. /
+   / in this realm of statictime, time is not a problem. this means that all values are eternal, without change, without attachment to any moment. /
+   / concepts like constant values and assigning values become obsolete. /
+   / in syntax, you immediatly bind an eternal bond between the value and a name. /
+
+   ::statictime_valbind_tmodule
+}
+
+%: statictime_valbind_tmodule {
+   :name:statictime_word is (tmodule) :value:statictime_expr .
+} -> {
+   namespace :name :value
+}
+
+%: statictime_val_name {:t:statictime_val_title :n:statictime_word}
+%: statictime_val_title /any title must start with a t/ {t::statictime_word}
+
+%--: statictime_val_name(expect t:title:until_space) {::val_title(expect :title) :name:statictime_word} -> {:name}
+%--: statictime_val_title(expect t:title:statictime_word) {t:title}
+
+%: statictime_expr {::statictime_expr_to}
+%: statictime_expr {::statictime_expr_extern_block}
+%: statictime_expr {::statictime_expr_module}
+
+/ all possible expressions that lead a `way` to somewhere /
+%: statictime_expr_to {::statictime_expr_to_namespace}
+%: statictime_expr_to {::statictime_expr_to_val}
+
+
+%: metatime_expr_definition {
+   
+}
+
+%: statictime_expr_to_namespace {to namespace :id:namespace_identifier} -> {:id}
+%: statictime_expr_to_val {to :target:statictime_val_name(expect tmodule)} -> {:target}
+
+%: namespace_identifier {::namespace_identifier_}
+%: namespace_identifier {'::`::namespace_identifier_}
+%: namespace_identifier_ {::c_ident}
+%: namespace_identifier_ {::c_ident`::'::namespace_identifier_}
+
+%: statictime_expr_extern_block {
+   extern :str:balanced_string({ })
+} -> {:str}
+
+%: statictime_expr_module {
+   new cpp_module :str:balanced_string({ })
+} -> {:str}
+
+////////////////////////////////////////////
+////////////////////////////////////////////
+
+
+
+  / * /
+  / And note, that in modern syntax, space can also be considered to be used more presently and clearly:
+       it seperates two tokens. if there is no space like in function(call);, then it is just one word.
+    We say that two words, so two complex tokens, must have space in between. To add meaning to a word,
+    work on postfixes and prefixes, like in human nature. /

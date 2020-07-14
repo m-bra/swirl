@@ -1,4 +1,6 @@
-target=swirl.0.0.2
+target=swirl.0.0.3
+
+prj:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 all: bin/$(target)
 
@@ -13,9 +15,15 @@ run: bin/$(target)
 
 .PHONY: clean
 clean:
-	rm -rf .cache
+	cargo clean
+	rm -rf bin
 
 .PHONY: install
 install:
-	cp -r bin/ $(INSTALL_DIR)
-	cp -r lib/ $(INSTALL_DIR)
+	ln -sf $(prj)/bin/swirl.0.0.3 $(base)/bin/swirl.0.0.3
+	ln -sf $(prj)/bin/swirl.0.0.3 $(base)/bin/swirl
+	ln -sf $(prj)/lib/swirl $(base)/lib/swirl
+
+.PHONY: uninstall
+uninstall:
+	echo "unimplemented"

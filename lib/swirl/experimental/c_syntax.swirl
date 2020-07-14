@@ -1,0 +1,8 @@
+%: (call) {::init_swirl}
+%: c_string {"::c_string_inner"}
+%: c_string(:s:c_string_inner) {} -> {":s"}
+
+%: c_string_inner {}
+%: c_string_inner {::not_quote::anychar::c_string_inner}
+
+%: not_quote (not) {"}

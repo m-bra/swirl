@@ -1,0 +1,31 @@
+/ say you want to branch swirl code depending on whether some rule exists or not (because that rule is used as a boolean value) /
+/ you use the following trick which resembles an if-else statement quite a lot: /
+
+/                                                  /
+/  %: (call) {::rule_name_to_test} -> {            /
+/     %':` (call) {// do if rule exists //}        /
+/  } (catch unknown rule) {                        /
+/     %':` (call) {// do if rule does not exist//} /
+/  }                                               /
+/                                                  /
+
+/ if rule_name_to_test exists, the expression returns another swirl statement to execute.   /
+/ if rule_name_to_test does not exist, the catch body is returned.                          /
+/ however, this code is assuming that rule_name_to_test has an empty header!                /
+/ if it doesnt, this will consume code *after* the if-else branch!                          /
+/ in order to prevent this, the enclosing (call) expects a unique id so that it can assert  /
+/ that no characters have been consumed by the tested rule. for this we currently simply    /
+/ assume that this uid is in fact unique to the whole processed text.                       /
+/ one good-enough implementation is to just type in a bunch of random numbers for the uid,  /
+/ that way, the following very improbable insecure case is still possible: that there 1) is /
+/ the same random uid somewhere in the processed text and 2) the tested rule consumes       /
+/ exactly the characters up until that second uid. it's safe enough to assume that this     /
+/ will never happen. /    
+
+/ // safe if-else //
+  %: (call) {::rule_name_to_test (uid) 1872368} -> {
+      //...//
+  } (catch unknown rule) {
+      %':` (call) {//...//}
+  } (uid) 1872368
+/
