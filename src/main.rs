@@ -82,11 +82,23 @@ fn init_rules() -> Rules {
         Rule::new("swirl_default_call_explicit_syntax".to_string())
             .variant(RuleVariant::empty())
     });
-    rules.insert("swirl_feature_undefine_rule`".to_string(), {
+    rules.insert("swirl_feature_undefine_rule".to_string(), {
         Rule::new("swirl_feature_undefine_rule".to_string())
             .variant(RuleVariant::empty())
     });
-    rules.insert("swirl_version_0_0_3`".to_string(), {
+    rules.insert("swirl_new_quote_signs".to_string(), {
+        Rule::new("swirl_new_quote_signs".to_string())
+            .variant(RuleVariant::empty())
+    });
+    rules.insert("swirl_version_0_0_1".to_string(), {
+        Rule::new("swirl_version_0_0_1".to_string())
+            .variant(RuleVariant::empty())
+    });
+    rules.insert("swirl_version_0_0_2".to_string(), {
+        Rule::new("swirl_version_0_0_2".to_string())
+            .variant(RuleVariant::empty())
+    });
+    rules.insert("swirl_version_0_0_3".to_string(), {
         Rule::new("swirl_version_0_0_3".to_string())
             .variant(RuleVariant::empty())
     });

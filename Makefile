@@ -20,6 +20,7 @@ clean:
 
 .PHONY: install
 install:
+	test $(base)
 	ln -sf $(prj)/bin/swirl.0.0.3 $(base)/bin/swirl.0.0.3
 	ln -sf $(prj)/bin/swirl.0.0.3 $(base)/bin/swirl
 	ln -sf $(prj)/lib/swirl $(base)/lib/swirl
