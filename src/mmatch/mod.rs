@@ -162,32 +162,31 @@ fn select_until_matching_brace<'a>(input: &'a Input, open: &str, close: &str) ->
     let mut input = input;
     let brace_error = || MatchError::expected(&format!("Closing brace: '{}'", close), input_start);
 
-    let alternative_implementation = true;
-    if alternative_implementation {
-        // ensure open != close [1]
-        if open == close {
-            unimplemented!();
-        }
+    // ensure open != close [1]
+    if open == close {
+        unimplemented!();
+    }
 
-        loop {
-            // branch [a] and branch [b] are mutually exclusive because of [1]
-            if input.starts_with(open) { // [a]
-                level += 1;
-            }
-            if input.starts_with(close) { // [b]
-                level -= 1;
-                if level == 0 {
-                    let length = input_start.len() - input.len();
-                    return Ok((input, &input_start[..length]))
-                }
-            }
-            
-            if input.is_empty() {
-                return Err(brace_error());
-            }
-            input = &input[1..];
+    loop {
+        // branch [a] and branch [b] are mutually exclusive because of [1]
+        if input.starts_with(open) { // [a]
+            level += 1;
         }
-    } else {
+        if input.starts_with(close) { // [b]
+            level -= 1;
+            if level == 0 {
+                let length = input_start.len() - input.len();
+                return Ok((input, &input_start[..length]))
+            }
+        }
+        
+        if input.is_empty() {
+            return Err(brace_error());
+        }
+        input = &input[1..];
+    }
+
+    /* old implementation
         let get_next_brace = |input: &Input| {
             let s = input.matches(open).next();
             let t = input.matches(close).next();
@@ -214,6 +213,7 @@ fn select_until_matching_brace<'a>(input: &'a Input, open: &str, close: &str) ->
                 }
             }
         }
+        */
     }
 }
 
