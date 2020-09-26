@@ -133,7 +133,7 @@ impl RuleVariant {
                         // see [3] (no param given to initial call to this variant)
                         // and [4] (no param given to recursive call by this variant)
                         assert!(param.is_empty()); 
-                        frame_result = header.match_last_skip(input, "", rules, 1, vec![frame_result.err().unwrap()]);
+                        frame_result = rules[name].match_last_skip(input, "", rules, 1, vec![frame_result.err().unwrap()]);
                         frame_result.is_err()
                     } {
                         input = frame_stack.pop().ok_or_else(|| frame_result.clone().err().unwrap())?.0;
