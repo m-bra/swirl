@@ -13,6 +13,10 @@
 %: whitespace {::1wh}
 %: whitespaces {::1nwh}
 %: swirl_inserted_whitespace {::whitespaces}
+%: anychar (any) {}
+%: helper_first_character {:a:anychar:b:anychar} -> {:a}
+%: helper_second_character {:a:anychar:b:anychar} -> {:b}
+%: helper_quotes {'`}
 %: az {a} %: az {b} %: az {c} %: az {d} %: az {e} %: az {f} %: az {g} %: az {h} %: az {i} %: az {j} %: az {k} %: az {l} %: az {m} %: az {n} %: az {o} %: az {p} %: az {q} %: az {r} %: az {s} %: az {t} %: az {u} %: az {v} %: az {w} %: az {x} %: az {y} %: az {z}
 %: AZ {A} %: AZ {B} %: AZ {C} %: AZ {D} %: AZ {E} %: AZ {F} %: AZ {G} %: AZ {H} %: AZ {I} %: AZ {J} %: AZ {K} %: AZ {L} %: AZ {M} %: AZ {N} %: AZ {O} %: AZ {P} %: AZ {Q} %: AZ {R} %: AZ {S} %: AZ {T} %: AZ {U} %: AZ {V} %: AZ {W} %: AZ {X} %: AZ {Y} %: AZ {Z}
 %: aZ {::az}
@@ -23,7 +27,6 @@
 %: alnum {::09}
 %: alnum_ {_}
 %: alnum_ {::alnum}
-%: anychar (any) {}
 %: opaquechar {::not_whitespace::anychar}
 %: not_whitespace (not) {::whitespace}
 %: remove_newlines {}

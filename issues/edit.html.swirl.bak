@@ -1,0 +1,198 @@
+%: {::swirl_version_0_0_3}
+%: {::swirl_default_call_explicit_syntax}
+%: filepath {public/loaders/edit.html.swirl}
+%: filecontent {
+	<html>
+	  <head>
+	    <link rel="stylesheet" type="text/css" href="style.css">
+	
+	
+	    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+	    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+	
+	    <script src="https://requirejs.org/docs/release/2.3.6/minified/require.js"> </script>
+	
+	    <style type="text/css">
+	      .fullsize  {
+	          height: 95%;
+	          width: 100%;
+	      }
+	      #container {
+	        font-family: monospace;
+	      }
+	
+	      .hide-scroll {
+	        overflow: hidden;
+	      }
+	
+	      .viewport {
+	          overflow: auto;
+	
+	          /* Make sure the inner div is not larger than the container
+	           * so that we have room to scroll.
+	           */
+	          max-height: 100%;
+	
+	    /* Pick an arbitrary margin/padding that should be bigger
+	     * than the max width of all the scroll bars across
+	     * the devices you are targeting.
+	     * padding = -margin
+	     */
+	    margin-right: -100px;
+	    padding-right: 100px;
+	      }
+	
+	    </style>
+	</head>
+	
+	<body class="hide-scroll">
+	  { <a href="/"> back </a> 
+	    <a href="#"> save </a> }
+	
+	  { edit: 
+	    <a href="/cf.reqf/index.html?edit"> index </a> 
+	    <a href="/cf.reqf/edit.html?edit"> edit </a>
+	    <a href="/cf.reqf/log.txt?edit"> log </a>
+	    <a href="/cf.reqf/style.css?edit"> style </a>
+	    <a href="/server.js?edit"> server </a> 
+	    <a href="/processMacros.js?edit"> processMacros </a>
+	    <a href="/test.html.m?edit"> test.html.m </a> } 
+	
+	  { open:
+	    <a href="/test.html.m"> test.html.m </a>
+	    <a href="/test.html.m?preprocessed"> test.html.m?preprocessed </a> } 
+	
+	    <form action="/index.html?restart" method="post">
+	        <button>restart server</button> 
+	    </form>
+	
+	  <br/> 
+	
+	  <textarea class="fullsize viewport" id="container" rows="15" cols="50">
+	    %: treat_special_chars {}
+	    %: treat_special_chars {::treat_sc_1::treat_special_chars}
+	    %: treat_sc_1 (any) {}
+	    %: treat_sc_1 {&} -> {&amp;}
+	    %: treat_sc_1 {>} -> {&gt;}
+	    %: treat_sc_1 {<} -> {&lt;}
+	    %: treat_sc_1 {%:} -> {%: {} -> {%}:}
+	    %: treat_sc_param (:t:treat_special_chars) {} -> {:t}
+	    %: {} -> {::treat_sc_param(::filecontent)}
+	  </textarea> 
+	
+	  <script>
+	
+	    const container = document.getElementById("container");
+	    
+	    container.addEventListener('change', function() {
+	        const url = %: {} -> {::filepath};
+	        let req = new XMLHttpRequest();
+	        req.open('PUT', url);
+	        req.setRequestHeader('Content-Type', "text/plain");  
+	        req.send(container.value); 
+	    }, false);
+	
+	  </script>
+	
+	<body>
+	
+	</html>
+	
+}
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+
+    <script src="https://requirejs.org/docs/release/2.3.6/minified/require.js"> </script>
+
+    <style type="text/css">
+      .fullsize  {
+          height: 95%;
+          width: 100%;
+      }
+      #container {
+        font-family: monospace;
+      }
+
+      .hide-scroll {
+        overflow: hidden;
+      }
+
+      .viewport {
+          overflow: auto;
+
+          /* Make sure the inner div is not larger than the container
+           * so that we have room to scroll.
+           */
+          max-height: 100%;
+
+    /* Pick an arbitrary margin/padding that should be bigger
+     * than the max width of all the scroll bars across
+     * the devices you are targeting.
+     * padding = -margin
+     */
+    margin-right: -100px;
+    padding-right: 100px;
+      }
+
+    </style>
+</head>
+
+<body class="hide-scroll">
+  { <a href="/"> back </a> 
+    <a href="#"> save </a> }
+
+  { edit: 
+    <a href="/cf.reqf/index.html?edit"> index </a> 
+    <a href="/cf.reqf/edit.html?edit"> edit </a>
+    <a href="/cf.reqf/log.txt?edit"> log </a>
+    <a href="/cf.reqf/style.css?edit"> style </a>
+    <a href="/server.js?edit"> server </a> 
+    <a href="/processMacros.js?edit"> processMacros </a>
+    <a href="/test.html.m?edit"> test.html.m </a> } 
+
+  { open:
+    <a href="/test.html.m"> test.html.m </a>
+    <a href="/test.html.m?preprocessed"> test.html.m?preprocessed </a> } 
+
+    <form action="/index.html?restart" method="post">
+        <button>restart server</button> 
+    </form>
+
+  <br/> 
+
+  <textarea class="fullsize viewport" id="container" rows="15" cols="50">
+    %: treat_special_chars {}
+    %: treat_special_chars {::treat_sc_1::treat_special_chars}
+    %: treat_sc_1 (any) {}
+    %: treat_sc_1 {&} -> {&amp;}
+    %: treat_sc_1 {>} -> {&gt;}
+    %: treat_sc_1 {<} -> {&lt;}
+    %: treat_sc_1 {%:} -> {%: {} -> {%}:}
+    %: treat_sc_param (:t:treat_special_chars) {} -> {:t}
+    %: (debug) {} -> {::treat_sc_param(::filecontent)}
+  </textarea> 
+
+  <script>
+
+    const container = document.getElementById("container");
+    
+    container.addEventListener('change', function() {
+        const url = %: {} -> {::filepath};
+        let req = new XMLHttpRequest();
+        req.open('PUT', url);
+        req.setRequestHeader('Content-Type', "text/plain");  
+        req.send(container.value); 
+    }, false);
+
+  </script>
+
+<body>
+
+</html>

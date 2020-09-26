@@ -1,8 +1,10 @@
 #![allow(non_snake_case)]
 
+use crate::*;
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct MatchError {
-    fatal: bool,
+    _fatal: bool,
     error_type: ErrorType,
     backtrace: Vec<String>
 }
@@ -14,7 +16,8 @@ pub enum ErrorType {
 }
 
 impl MatchError {
-    pub fn is_fatal(&self) -> bool {self.fatal}
+    pub fn is_fatal(&self) -> bool {self._fatal}
+
     pub fn is_unknown_rule(&self) -> bool {
         match self.error_type {
             ErrorType::UnknownRule {msg: _} => true,
@@ -28,7 +31,7 @@ impl MatchError {
                 msg: msg.as_ref().to_string(),
                 subErrors: vec![]
             },
-            fatal: false,
+            _fatal: false,
             backtrace: vec![]
         }
     }
@@ -39,11 +42,43 @@ impl MatchError {
                 msg: msg.as_ref().to_string(),
                 subErrors: subErrors,
             },
-            fatal: false,
+            _fatal: false,
             backtrace: vec![]
         }
     }
 
+    pub fn expected(expected: &str, input: &str) -> MatchError {
+        MatchError::new(format!("Expected '{}', got '{}'", expected, error_region(input)))
+    }
+
+    pub fn unknown_variable(var_ident: &str, input: &str) -> MatchError {
+        MatchError::new(format!("Unknown variable '{}': '{}'", var_ident, error_region(input)))
+    }
+
+    pub fn unknown_rule(rule_ident: &str, input: &str) -> MatchError {
+        MatchError::new(format!("Unknown rule: '{}': '{}'", rule_ident, error_region(input)))
+    }
+
+    pub fn rule_variant_verification_failure(rule_name: &str, rule_variant: &UntrustedRuleVariant, verifier_message: String) -> MatchError {
+        MatchError::new(format!("\
+            {} --- Failed to verify rule variant %: {} {{{:?}}}\n\
+            {} --- {}\
+        ", get_indent(), rule_name, rule_variant,
+        get_indent(), verifier_message))
+    }
+
+    pub fn rejected_tail_optimization(rule_name: &str, reason: String) -> MatchError {
+        MatchError::new(format!("{} --- Rejected tail optimization of rule '{}': {}", get_indent(), rule_name, reason))
+    }
+
+    pub fn fatal(mut self) -> MatchError {
+        self._fatal = true;
+        self
+    }
+}
+
+
+impl MatchError {
     // \n included
     fn display_without_backtrace(&self, indent: impl AsRef<str>) -> String {
         let indent = indent.as_ref();
@@ -60,38 +95,6 @@ impl MatchError {
             }
         }
         
-    }
-
-    pub fn expected(expected: &str, input: &str) -> MatchError {
-        MatchError {
-            error_type: ErrorType::Generic {
-                msg: format!("Expected '{}', got '{}'", expected, error_region(input)),
-                subErrors: vec![],
-            },
-            fatal: false,
-            backtrace: vec![],
-        }
-    }
-
-    pub fn unknown_variable(var_ident: &str, input: &str) -> MatchError {
-        MatchError {
-            error_type: ErrorType::Generic {
-                msg: format!("Unknown variable '{}': '{}'", var_ident, error_region(input)),
-                subErrors: vec![],
-            },
-            fatal: true,
-            backtrace: vec![],
-        }
-    }
-
-    pub fn unknown_rule(rule_ident: &str, input: &str) -> MatchError {
-        MatchError {
-            error_type: ErrorType::UnknownRule {
-                msg: format!("Unknown rule: '{}': '{}'", rule_ident, error_region(input)),
-            },
-            fatal: true,
-            backtrace: vec![],
-        }
     }
 }
 
