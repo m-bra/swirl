@@ -11,49 +11,49 @@ pub struct UntrustedRuleVariant {
 }
 
 impl UntrustedRuleVariant {
-    pub fn body(self, invocation_string: InvocationString) -> UntrustedRuleVariant {
+    pub fn body(mut self, invocation_string: InvocationString) -> UntrustedRuleVariant {
         self._body = Some(invocation_string);
         self
     }
 
-    pub fn body_option(self, invocation_string_option: Option<InvocationString>) -> UntrustedRuleVariant {
+    pub fn body_option(mut self, invocation_string_option: Option<InvocationString>) -> UntrustedRuleVariant {
         self._body = invocation_string_option;
         self
     }
 
-    pub fn parameter_header(self, invocation_string: InvocationString) -> UntrustedRuleVariant {
+    pub fn parameter_header(mut self, invocation_string: InvocationString) -> UntrustedRuleVariant {
         self._parameter_header = Some(invocation_string);
         self
     }
 
-    pub fn parameter_header_option(self, invocation_string_option: Option<InvocationString>) -> UntrustedRuleVariant {
+    pub fn parameter_header_option(mut self, invocation_string_option: Option<InvocationString>) -> UntrustedRuleVariant {
         self._parameter_header = invocation_string_option;
         self
     }
 
-    pub fn flag(self, string: String) -> UntrustedRuleVariant {
+    pub fn flag(mut self, string: String) -> UntrustedRuleVariant {
         self._flags.insert(string);
         self
     }
 
-    pub fn flags(self, strings: HashSet<String>) -> UntrustedRuleVariant {
+    pub fn flags(mut self, strings: HashSet<String>) -> UntrustedRuleVariant {
         for s in strings {
             self._flags.insert(s);
         }
         self
     }
 
-    pub fn catch_unknown_rule(self, invocation_string: InvocationString) -> UntrustedRuleVariant {
+    pub fn catch_unknown_rule(mut self, invocation_string: InvocationString) -> UntrustedRuleVariant {
         self._catch_unknown_rule = Some(invocation_string);
         self
     }
 
-    pub fn catch_unknown_rule_option(self, invocation_string_option: Option<InvocationString>) -> UntrustedRuleVariant {
+    pub fn catch_unknown_rule_option(mut self, invocation_string_option: Option<InvocationString>) -> UntrustedRuleVariant {
         self._catch_unknown_rule = invocation_string_option;
         self
     }
 
-    pub fn verify(self, rule_name: String) -> MatchResult<RuleVariant> {
+    pub fn verify(self, rule_name: &str) -> MatchResult<RuleVariant> {
         if self._flags.contains("debug") {
             MatchError::rule_variant_verification_failure(rule_name, &self, "Error: Flag 'debug' is deprecated.".to_string())
                 .tap(Err)
@@ -81,7 +81,7 @@ impl RuleVariant {
     }
 
     pub fn empty() -> RuleVariant {
-        Self::new(InvocationString::empty()).verify("<INVALID>".to_string()).expect("Investigate the source code of this panic.")
+        Self::new(InvocationString::empty()).verify("<INVALID>").expect("Investigate the source code of this panic.")
     }
 
     pub fn header_negated(&self) -> bool {
@@ -101,7 +101,7 @@ impl RuleVariant {
     }
 
 
-    pub fn on_enter(&self, rule_name: String, input: &str) {
+    pub fn on_enter(&self, rule_name: &str, input: &str) {
         if self.0._flags.contains("print") || self.0._flags.contains("print_enter") {
             println!("{} --- Try %: {} {{{}}} on '{}'", get_indent(), rule_name, self.0._header, firstline(input));
             push_indent();
@@ -112,7 +112,7 @@ impl RuleVariant {
         }
     }
 
-    pub fn on_success(&self, rule_name: String, input: &str) {
+    pub fn on_success(&self, rule_name: &str, input: &str) {
         if self.0._flags.contains("print") || self.0._flags.contains("print_success") {
             pop_indent();
             println!("{} >>> Success! ::{} on '{}'", get_indent(), rule_name, firstline(input));
@@ -124,7 +124,7 @@ impl RuleVariant {
     }
 
 
-    pub fn on_failure(&self, rule_name: String, input: &str) {
+    pub fn on_failure(&self, rule_name: &str, input: &str) {
         if self.0._flags.contains("print") || self.0._flags.contains("print_failure") {
             pop_indent();
             println!("{} >>> Failure! ::{} on '{}'", get_indent(), rule_name, firstline(input));

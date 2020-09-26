@@ -59,7 +59,7 @@ impl MatchError {
         MatchError::new(format!("Unknown rule: '{}': '{}'", rule_ident, error_region(input)))
     }
 
-    pub fn rule_variant_verification_failure(rule_name: String, rule_variant: &UntrustedRuleVariant, verifier_message: String) -> MatchError {
+    pub fn rule_variant_verification_failure(rule_name: &str, rule_variant: &UntrustedRuleVariant, verifier_message: String) -> MatchError {
         MatchError::new(format!("\
             {} --- Failed to verify rule variant %: {} {{{:?}}}\n\
             {} --- {}\
@@ -67,11 +67,11 @@ impl MatchError {
         get_indent(), verifier_message))
     }
 
-    pub fn rejected_tail_optimization(rule_name: String, reason: String) -> MatchError {
+    pub fn rejected_tail_optimization(rule_name: &str, reason: String) -> MatchError {
         MatchError::new(format!("{} --- Rejected tail optimization of rule '{}': {}", get_indent(), rule_name, reason))
     }
 
-    pub fn fatal(self) -> MatchError {
+    pub fn fatal(mut self) -> MatchError {
         self._fatal = true;
         self
     }

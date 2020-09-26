@@ -65,7 +65,7 @@ impl RuleVariant {
 
             let name = name.as_ref();
 
-            let optimize_tail_recursion = {
+            let optimize_tail_recursion = unsafe {
                 self.header().end_invocation().map(|end_invoc| match end_invoc {
                         Invocation::RuleInvocation(_, n, _) if n == name => true,
                         _ => false
@@ -94,7 +94,7 @@ impl RuleVariant {
                     (input, self.make_result(header_result, rules)?)
                 }
             } else {
-                let (recursion_var, recursive_param) = match self.header().end_invocation().unwrap() {
+                let (recursion_var, recursive_param) = match unsafe { self.header().end_invocation().unwrap() } {
                     Invocation::RuleInvocation(result_var, _, param) => (result_var, param),
                     Invocation::VarInvocation(_) => unreachable!(),
                 };
@@ -144,7 +144,7 @@ impl RuleVariant {
 
                     // bind rule results in reverse
                     let mut result_str: String = result_str;
-                    if let Some(body) = &self.body() {
+                    if let Some(_) = &self.body() {
                         unimplemented!("
                             this program crashed because the coder was too lazy to implement a specific case. sorry.
                             okay but alright to be fair, recursive rules are unefficient when they have bodies.
@@ -165,7 +165,7 @@ impl RuleVariant {
                             }
                         */
                     } else { // this is just an optimization for the if-branch above, which can do the same as this code
-                        for (_, mut invoc_str_result) in frame_stack.drain(..).rev() {
+                        for (_, invoc_str_result) in frame_stack.drain(..).rev() {
                             let partial_result = invoc_str_result.bind_vars()?;
                             let mut concatenation = String::with_capacity(result_str.len() + partial_result.len());
                             concatenation.push_str(&partial_result);

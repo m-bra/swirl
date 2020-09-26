@@ -30,7 +30,7 @@ fn match_invocation_string_<'a>(
 
     let mut var_invoc_str = InvocationString::new();
 
-    for (part, invocs) in invoc_str.iter() {
+    for (part, invocs) in unsafe { invoc_str.iter() } {
         if !part.is_empty() {
             //println!("{}match '{}'", get_indent(), part);
         }

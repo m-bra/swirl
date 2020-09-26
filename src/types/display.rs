@@ -16,7 +16,7 @@ impl fmt::Display for Invocation {
 
 impl fmt::Display for InvocationString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (part, invocations) in self.iter() {
+        for (part, invocations) in unsafe {self.iter()} {
             if part.contains(char::is_whitespace) {
                 write!(f, "{{'{}'}} ", part)?;
             } else {

@@ -10,16 +10,16 @@ impl Rule {
         let mut candidate_errors = candidate_errors;
         for (i, v) in self.variants.iter().rev().enumerate().skip(skip) {
 
-            v.on_enter(self.name, input);
+            v.on_enter(&self.name, input);
 
             match v.try_match(input, param, rules, &self.name, i) {
                 // call on_fail, on_success
                 Ok((input, result)) => {
-                    v.on_success(self.name, input);
+                    v.on_success(&self.name, input);
                     return Ok((input, result))
                 },
                 Err(err) => {
-                    v.on_failure(self.name, input);
+                    v.on_failure(&self.name, input);
                     candidate_errors.push(err);
                 },
             }
@@ -45,7 +45,7 @@ impl Rule {
 
             *appleft-= 1;
 
-            variant.on_enter(self.name, &input);
+            variant.on_enter(&self.name, &input);
 
             //let (unconsumed, replace) = variant.try_match(&input, "", rules, "", i)?;
             //input = replace + unconsumed;
@@ -53,11 +53,11 @@ impl Rule {
             input = match variant.try_match(&input, "", rules, "", i) {
                 Ok((unconsumed, replace)) => {
                     let input = replace + unconsumed;
-                    variant.on_success(self.name, &input);
+                    variant.on_success(&self.name, &input);
                     input
                 },
                 Err(err) => {
-                    variant.on_failure(self.name, &input);
+                    variant.on_failure(&self.name, &input);
                     return Err(err);
                 }
             };

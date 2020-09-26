@@ -230,7 +230,7 @@ impl InvocationString {
     }
 
     pub fn ensure_only_var_invocs(self) -> Result<VarInvocationString, InvocationString> {
-        if self.iter().any(|(_, invocs)| invocs.iter().any(|invoc| match invoc {
+        if unsafe {self.iter()}.any(|(_, invocs)| invocs.iter().any(|invoc| match invoc {
             Invocation::VarInvocation(_) => false,
             _ => true,
         })) {
@@ -254,7 +254,7 @@ impl VarInvocationString {
         let VarInvocationString(this) = self;
         let mut anon_i = 0;
         let mut buf = String::new();
-        for (part, invocations) in this.iter() {
+        for (part, invocations) in unsafe {this.iter()} {
             buf.push_str(part);
             for invoc in invocations {
                 match invoc {

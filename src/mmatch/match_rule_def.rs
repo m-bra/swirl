@@ -117,7 +117,7 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
             RuleVariant::new(input_header)
                 .parameter_header_option(parameter_header_option)
                 .flags(flags)
-                .verify(rule_name)
+                .verify(&rule_name)
                 .and_then(|rule_variant| Ok((input, (rule_name, rule_variant))))
         },
         Ok(input) => {
@@ -143,7 +143,7 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
                 .body(body)
                 .flags(flags)
                 .catch_unknown_rule_option(catch_unknown_rule)
-                .verify(rule_name)
+                .verify(&rule_name)
                 .and_then(|rule_variant| {
                     Ok((input, (rule_name, rule_variant)))
                 })
