@@ -103,7 +103,7 @@ impl RuleVariant {
 
     pub fn on_enter(&self, rule_name: &str, input: &str) {
         if self.0._flags.contains("print") || self.0._flags.contains("print_enter") {
-            println!("{} --- Try %: {} {{{}}} on '{}'", get_indent(), rule_name, self.0._header, firstline(input));
+            println!("{} --- Try variant %: {} {{{}}} on '{}'", get_indent(), rule_name, self.0._header, firstline(input));
             push_indent();
         }
 
@@ -115,7 +115,7 @@ impl RuleVariant {
     pub fn on_success(&self, rule_name: &str, input: &str) {
         if self.0._flags.contains("print") || self.0._flags.contains("print_success") {
             pop_indent();
-            println!("{} >>> Success! ::{} on '{}'", get_indent(), rule_name, firstline(input));
+            println!("{} >>> Success!", get_indent());
         }
 
         if self.0._flags.contains("break_success") {
@@ -127,7 +127,7 @@ impl RuleVariant {
     pub fn on_failure(&self, rule_name: &str, input: &str) {
         if self.0._flags.contains("print") || self.0._flags.contains("print_failure") {
             pop_indent();
-            println!("{} >>> Failure! ::{} on '{}'", get_indent(), rule_name, firstline(input));
+            println!("{} >>> Failure!", get_indent());
         }
 
         if self.0._flags.contains("break_failure") {
