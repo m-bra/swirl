@@ -150,7 +150,10 @@ pub fn match_escapable_char_old(input: &Input, escape: char) -> MatchResult<(&In
 }
 
 // finds the matching closing brace to the opening brace that is located at input[-1]
-fn find_matching_brace<'a>(input: &'a Input, open: &str, close: &str) -> MatchResult<(&'a Input, &'a str)> {
+// returns (if no error):
+//     1. the new input pointer as beginning at the matched closed brace
+//     2. the text between opening brace and corresponding (!) closing brace.
+fn select_until_matching_brace<'a>(input: &'a Input, open: &str, close: &str) -> MatchResult<(&'a Input, &'a str)> {
     // level is now at 1
     // return the closing brace that brings level back to 0
     let mut level = 1;
@@ -159,32 +162,64 @@ fn find_matching_brace<'a>(input: &'a Input, open: &str, close: &str) -> MatchRe
     let mut input = input;
     let brace_error = || MatchError::expected(&format!("Closing brace: '{}'", close), input_start);
 
-    let get_next_brace = |input: &Input| {
-        let s = input.matches(open).next();
-        let t = input.matches(close).next();
-        match (s, t) {
-            (Some(s), Some(t)) if s.len() > t.len() => Some(s),
-            (_, Some(t)) => Some(t),
-            (Some(s), None) => Some(s),
-            (None, None) => None
+    let alternative_implementation = true;
+    if alternative_implementation {
+        // ensure open != close [1]
+        if open == close {
+            unimplemented!();
         }
-        .map(|s| s.as_ptr() as usize - input.as_ptr() as usize)
-    };
 
-    loop {
-        let i = get_next_brace(input).ok_or_else(brace_error)?;
-        input = &input[i..];
-
-        if input.starts_with(open) {
-            level += 1;
-        } else {
-            level -= 1;
-            if level == 0 {
-                let length = input_start.len() - input.len();
-                return Ok((input, &input_start[..length]));
+        loop {
+            // branch [a] and branch [b] are mutually exclusive because of [1]
+            if input.starts_with(open) { // [a]
+                level += 1;
+            }
+            if input.starts_with(close) { // [b]
+                level -= 1;
+                if level == 0 {
+                    let length = input_start.len() - input.len();
+                    return Ok((input, &input_start[..length]))
+                }
+            }
+            
+            if input.is_empty() {
+                return Err(brace_error());
+            }
+            input = &input[1..];
+        }
+    } else {
+        let get_next_brace = |input: &Input| {
+            let s = input.matches(open).next();
+            let t = input.matches(close).next();
+            match (s, t) {
+                (Some(s), Some(t)) if s.len() > t.len() => Some(s),
+                (_, Some(t)) => Some(t),
+                (Some(s), None) => Some(s),
+                (None, None) => None
+            }
+            .map(|s| s.as_ptr() as usize - input.as_ptr() as usize)
+        };
+    
+        loop {
+            let i = get_next_brace(input).ok_or_else(brace_error)?;
+            input = &input[i..];
+    
+            if input.starts_with(open) {
+                level += 1;
+            } else {
+                level -= 1;
+                if level == 0 {
+                    let length = input_start.len() - input.len();
+                    return Ok((input, &input_start[..length]));
+                }
             }
         }
     }
+}
+
+// deprecated name.
+fn find_matching_brace<'a>(input: &'a Input, open: &str, close: &str) -> MatchResult<(&'a Input, &'a str)> {
+    return select_until_matching_brace(input, open, close);
 }
 
 // either matches one character, or escaped text that is enclosed in the given strings.

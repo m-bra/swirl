@@ -1,1 +1,3 @@
-issues/edit.html.swirl
+%: (print) {::swirl_version_0_0_3}
+
+%: (print) {} -> {'hello 'merlin 'schmuffi` brandt`, how are you?`}

@@ -1,5 +1,4 @@
-%: (print) {} -> {'hello 'merlin 'schmuffi` brandt`, how are you?`}
-%: (print) {::swirl_version_0_0_3}
+
 %: {::swirl_default_call_explicit_syntax}
 %: filepath {public/loaders/edit.html.swirl}
 %: filecontent (print) {} -> {
