@@ -9,27 +9,21 @@ impl Rule {
         //let variants = &rules.get(name).ok_or_else(|| MatchError::new(format!("Rule '{}' does not exist.", name), &mut vec![]))?.variants;
         let mut candidate_errors = candidate_errors;
         for (i, v) in self.variants.iter().rev().enumerate().skip(skip) {
-            if v.is_print() {
-                println!("{}-Try %: {} {{{}}} on '{}'", get_indent(), self.name, v.header, firstline(input));
-                push_indent();
-            }
+
+            v.on_enter(self.name, input);
 
             match v.try_match(input, param, rules, &self.name, i) {
+                // call on_fail, on_success
                 Ok((input, result)) => {
-                    if v.is_print() {
-                        pop_indent();
-                        println!("{}-> success!", get_indent());
-                    }
+                    v.on_success(self.name, input);
                     return Ok((input, result))
                 },
                 Err(err) => {
-                    if v.is_print() {
-                        pop_indent();
-                        println!("{}-> fail.", get_indent());
-                    }
+                    v.on_failure(self.name, input);
                     candidate_errors.push(err);
                 },
             }
+
         }
         return MatchError::compose(format!("No variant of '{}' matched.", self.name), candidate_errors).tap(Err);
     }
@@ -38,6 +32,7 @@ impl Rule {
         self.match_last_skip(input, param, rules, 0, vec![])
     }
 
+    // if one variant in sequence fails, the whole sequence fails.
     pub fn match_sequence(&self, input: &str, rules: &Rules, appleft: &mut MaybeInf<u32>) -> Result<String, MatchError> {
         let mut input = input.to_string();
         for (i, variant) in self.variants.iter().rev().enumerate() {
@@ -50,8 +45,22 @@ impl Rule {
 
             *appleft-= 1;
 
-            let (unconsumed, replace) = variant.try_match(&input, "", rules, "", i)?;
-            input = replace + unconsumed;
+            variant.on_enter(self.name, &input);
+
+            //let (unconsumed, replace) = variant.try_match(&input, "", rules, "", i)?;
+            //input = replace + unconsumed;
+
+            input = match variant.try_match(&input, "", rules, "", i) {
+                Ok((unconsumed, replace)) => {
+                    let input = replace + unconsumed;
+                    variant.on_success(self.name, &input);
+                    input
+                },
+                Err(err) => {
+                    variant.on_failure(self.name, &input);
+                    return Err(err);
+                }
+            };
         }
         Ok(input)
     }

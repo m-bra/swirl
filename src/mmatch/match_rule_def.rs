@@ -97,7 +97,7 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
 
     let symbolic_whitespace = WhiteSpaceHandling::Substitute(Invocation::new_rule_invocation("", "swirl_inserted_whitespace"));
 
-    let (input, parameter_header) = match_invocation_string_def(input, '(', ')', &symbolic_whitespace)?;
+    let (input, parameter_header_option) = match_invocation_string_def(input, '(', ')', &symbolic_whitespace)?;
     let input = match_whitespaces(input)?;
 
     let header_start = input;
@@ -112,9 +112,13 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
                 match_str(input, "{")?;
             };
             if missing_arrow_warning.is_ok() {
-                println!("Warning: Rule '{}' is probably missing an arrow in one of its variants", rule_name);
+                println!("Warning: Rule '{}' is probably missing an arrow in its variant {{{}}}", rule_name, input_header);
             }
-            Ok((input, (rule_name, RuleVariant {header: input_header, parameter_header, body: None, flags, catch_unknown_rule: None})))
+            RuleVariant::new(input_header)
+                .parameter_header_option(parameter_header_option)
+                .flags(flags)
+                .verify(rule_name)
+                .and_then(|rule_variant| Ok((input, (rule_name, rule_variant))))
         },
         Ok(input) => {
             let input = match_whitespaces(input)?;
@@ -134,9 +138,15 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
                 Err(_) => (input, None)
             };
         
-            Ok (
-                (input, (rule_name, RuleVariant {header: input_header, parameter_header, body: Some(body), flags, catch_unknown_rule}))
-            )
+            RuleVariant::new(input_header)
+                .parameter_header_option(parameter_header_option)
+                .body(body)
+                .flags(flags)
+                .catch_unknown_rule_option(catch_unknown_rule)
+                .verify(rule_name)
+                .and_then(|rule_variant| {
+                    Ok((input, (rule_name, rule_variant)))
+                })
         }
     }
 }

@@ -10,6 +10,7 @@ pub struct InvocationString {
     /// each usize, an index in .text, is associated with all the rule invocations that appear (in the given order) right before the index
     /// it is assumed that there are no keys > text.len()
     /// a key of text.len() means that the invocations are at the end of the rule part, without any text afterwards
+    /// todo: idea: replace CloneUnsafeCell<_> with Rc<_>
     invocations: BTreeMap<usize, CloneUnsafeCell<Vec<Invocation>>>,
 }
 
@@ -17,17 +18,6 @@ pub struct InvocationString {
 pub struct InvocationStringBuilder(InvocationString);
 
 use std::mem::transmute;
-
-impl InvocationString {
-    pub fn debug_print(&self) {
-        println!("invocations with text '{}': ", self.text);
-        for (i, cell) in self.invocations.iter() {
-            println!("{}, {:?}", i, unsafe {
-                &*cell.get()
-            })
-        }
-    }
-}
 
 impl InvocationString {
     pub fn empty() -> InvocationString {
@@ -60,7 +50,8 @@ impl InvocationString {
 
     /// iterate text and invocation segments
     /// might include empty items ("", &[])
-    pub fn iter(&self) -> impl Iterator<Item=(&str, &[Invocation])> {
+    /// while returned references live, do not call pop_end_invoc() or push_invoc() 
+    pub unsafe fn iter(&self) -> impl Iterator<Item=(&str, &[Invocation])> {
         use std::rc::Rc;
         use std::cell::RefCell;
 
@@ -69,7 +60,7 @@ impl InvocationString {
         self.invocations.iter()
             // assuming .map() is called exactly once, in the correct order.
             .map(move |(&index, invocs)| {
-                let invocs = unsafe {&*invocs.get()};
+                let invocs = &*invocs.get();
                 let from: usize = *last_index2.borrow();
                 let to: usize = index;
                 *last_index2.borrow_mut() = index;
@@ -81,21 +72,24 @@ impl InvocationString {
     }
 
     /// return last invocation at the end of rule if the rule does not end in text
-    pub fn end_invocation(&self) -> Option<&Invocation> {
-        self.invocations.get(&self.text.len()).and_then(|invocs| unsafe{&*invocs.get()}.iter().last())
+    /// while returned references live, do not call pop_end_invoc() or push_invoc() 
+    pub unsafe fn end_invocation(&self) -> Option<&Invocation> {
+        self.invocations.get(&self.text.len()).and_then(|invocs| (&*invocs.get()).iter().last())
     }
 
+    // no reference given by self.end_invocation or self.iter may be alive when calling this function.
     unsafe fn pop_end_invoc(&self) -> Option<Invocation> {
         self.invocations.get(&self.text.len()).and_then(|invocs| {
-            let invocs: &mut Vec<_> = transmute(invocs);
-            invocs.pop()
+            let invocs: *mut Vec<_> = invocs.get();
+            (&mut *invocs).pop()
         })
     }
 
+    // no reference given by self.end_invocation or self.iter may be alive when calling this function.
     unsafe fn push_invoc(&self, invoc: Invocation) {
         if let Some(invocs) = self.invocations.get(&self.text.len()) {
-            let invocs: &mut Vec<_> = transmute(invocs);
-            invocs.push(invoc);
+            let invocs: *mut Vec<_> = invocs.get();
+            (&mut *invocs).push(invoc)
         }
     }
 }
@@ -175,14 +169,41 @@ impl InvocationStringBuilder {
 }
 
 impl InvocationString {
-    /// accessing the header memory from any other than the reference given to the closure will result in undefined behaviour
-    /// because the header is modified without having a mutable reference to it.
+    /// In order to ensure requirement [B], there must be not a single living reference on self.
+    pub unsafe fn without_tail_recursion_unsafe<R>(&self, tail_name: impl AsRef<str>, inner: impl FnOnce(&InvocationString) -> MatchResult<R>) -> MatchResult<R> {
+        let mut tail = None;
+
+        // requirement [B]: we have to ensure aliasing rules in [1] and [2]
+        if let Some(invoc) = self.pop_end_invoc() { // [1]
+            let rulename = match &invoc {
+                Invocation::RuleInvocation(_, rulename, _) => rulename,
+                _ => panic!("ouf")
+            };
+
+            if rulename == tail_name.as_ref() {
+                tail = Some(invoc);
+            } else {
+                self.push_invoc(invoc); // [2]
+            }
+        }
+
+        // see [A]
+        let result = inner(&self);
+
+        if let Some(invoc) = tail {
+            self.push_invoc(invoc); // [3]
+        }
+        result
+    }
+
     pub fn without_tail_recursion<R>(&self, tail_name: impl AsRef<str>, inner: impl FnOnce(&InvocationString) -> MatchResult<R>) -> MatchResult<R> {
         let mut tail = None;
 
         unsafe {
+            // by cloning, we ensure that there are no references pointing to this specific memory region.
+            // thus ensuring aliasing rules in [1] and [2]
             let this = self.clone();
-            if let Some(invoc) = this.pop_end_invoc() {
+            if let Some(invoc) = this.pop_end_invoc() { // [1]
                 let rulename = match &invoc {
                     Invocation::RuleInvocation(_, rulename, _) => rulename,
                     _ => panic!("ouf")
@@ -191,14 +212,18 @@ impl InvocationString {
                 if rulename == tail_name.as_ref() {
                     tail = Some(invoc);
                 } else {
-                    this.push_invoc(invoc);
+                    this.push_invoc(invoc); //[2]
                 }
             }
 
+            // [A]:
+            // after the inner function has been called, there must be no references remaining that point to `this`.
+            // this is true since we only provide the inner function only has an immutable reference to `this`
+            // thus ensuring aliasing rules in [3]
             let result = inner(&this);
 
             if let Some(invoc) = tail {
-                this.push_invoc(invoc);
+                this.push_invoc(invoc); // [3]
             }
             result
         }
@@ -275,6 +300,18 @@ impl PartialEq for InvocationString {
     }
 }
 impl Eq for InvocationString {}
+
+
+impl InvocationString {
+    pub fn debug_print(&self) {
+        println!("invocations with text '{}': ", self.text);
+        for (i, cell) in self.invocations.iter() {
+            println!("{}, {:?}", i, unsafe {
+                &*cell.get()
+            })
+        }
+    }
+}
 
 /*impl<I: Clone> Clone for InvocationString {
     fn clone(&self) -> Self {
