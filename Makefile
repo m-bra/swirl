@@ -1,4 +1,4 @@
-target=swirl.0.0.3
+target=swirl.0.1.0
 
 prj:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
@@ -18,13 +18,13 @@ clean:
 	cargo clean
 	rm -rf bin
 
-.PHONY: install
-install:
+.PHONY: global_link
+global_link:
 	test $(base)
-	ln -sf $(prj)/bin/swirl.0.0.3 $(base)/bin/swirl.0.0.3
-	ln -sf $(prj)/bin/swirl.0.0.3 $(base)/bin/swirl
+	ln -sf $(prj)/bin/$(target) $(base)/bin/$(target)
+	ln -sf $(prj)/bin/$(target) $(base)/bin/swirl
 	ln -sf $(prj)/lib/swirl $(base)/lib/swirl
 
-.PHONY: uninstall
-uninstall:
+.PHONY: global_unlink
+global_unlink:
 	echo "unimplemented"
