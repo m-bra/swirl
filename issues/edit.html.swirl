@@ -1,7 +1,6 @@
 
-%: {::swirl_default_call_explicit_syntax}
-%: filepath {public/loaders/edit.html.swirl}
-%: filecontent (print) {} -> {
+%: filepath (print) {} -> {public/loaders/edit.html.swirl}
+%: filecontent (print) {} -> {{'
 	<html>
 	  <head>
 	    <link rel="stylesheet" type="text/css" href="style.css">
@@ -78,18 +77,20 @@
 	    %: treat_sc_1 {<} -> {&lt;}
 	    %: treat_sc_1 {%:} -> {%: {} -> {%}:}
 	    %: treat_sc_param (:t:treat_special_chars) {} -> {:t}
-	    %: {} -> {::treat_sc_param(::filecontent)}
+	    %: put_treated_filecontent (print)  {} -> {::treat_sc_param(::filecontent)}
+        %: {::put_treated_filecontent}
 	  </textarea> 
 	
 	  <script>
 	
 	    const container = document.getElementById("container");
 	    
-	    container.addEventListener('change', function() {
-	        const url = %: {} -> {::filepath};
+	    container.addEventListener({''`}change{''`}, function() {
+            %: put_filepath {} -> {::filepath}
+	        const url = %: {::put_filepath};
 	        let req = new XMLHttpRequest();
-	        req.open('PUT', url);
-	        req.setRequestHeader('Content-Type', "text/plain");  
+	        req.open({''`}PUT{''`}, url);
+	        req.setRequestHeader({''`}Content-Type{''`}, "text/plain");  
 	        req.send(container.value); 
 	    }, false);
 	
@@ -99,7 +100,7 @@
 	
 	</html>
 	
-}
+`}}
 <html>
   <head>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -183,11 +184,11 @@
 
     const container = document.getElementById("container");
     
-    container.addEventListener('change', function() {
+    container.addEventListener({''`}change{''`}, function() {
         const url = %: (print) {} -> {::filepath};
         let req = new XMLHttpRequest();
-        req.open('PUT', url);
-        req.setRequestHeader('Content-Type', "text/plain");  
+        req.open({''`}PUT{''`}, url);
+        req.setRequestHeader({''`}Content-Type{''`}, "text/plain");  
         req.send(container.value); 
     }, false);
 

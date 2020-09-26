@@ -241,7 +241,14 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, wrap_begin: char, wrap_
             }
             match_whitespaces(input)?
         } else {
-            let (input, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN, ESCAPE_BRACE_CLOSE)?;
+            // higher escape brace indices take precedence
+            let input_start = input;
+            let (input, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[1], ESCAPE_BRACE_CLOSE[1])?;
+            let (input, s, is_escaped) = if is_escaped {
+                (input, s, true)
+            } else {
+                match_escapable_char(input_start, ESCAPE_BRACE_OPEN[0], ESCAPE_BRACE_CLOSE[0])?
+            };
             let mut input = input;
 
             if !is_escaped {

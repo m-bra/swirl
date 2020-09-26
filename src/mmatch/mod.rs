@@ -186,7 +186,8 @@ fn select_until_matching_brace<'a>(input: &'a Input, open: &str, close: &str) ->
         input = &input[1..];
     }
 
-    /* old implementation
+    // old implementation
+    /* 
         let get_next_brace = |input: &Input| {
             let s = input.matches(open).next();
             let t = input.matches(close).next();
@@ -213,8 +214,7 @@ fn select_until_matching_brace<'a>(input: &'a Input, open: &str, close: &str) ->
                 }
             }
         }
-        */
-    }
+    */
 }
 
 // deprecated name.
@@ -229,8 +229,9 @@ pub fn match_escapable_char<'a>(input: &'a Input, open: &str, close: &str) -> Ma
     let close_l = close.len();
     if input.starts_with(open) {
         let (closing_brace, brace_contents) 
-            = find_matching_brace(&input[open_l..], open, close)
-            .ok().ok_or_else(|| MatchError::expected(&format!("End of escape string: '{}'", close), "<end of file>"))?;
+            = select_until_matching_brace(&input[open_l..], open, close)
+            .ok().ok_or_else(|| 
+                MatchError::expected(&format!("End of escape string: '{}'", close), "<end of file>"))?;
         
         Ok((&closing_brace[close_l..], brace_contents, true))
     } else {

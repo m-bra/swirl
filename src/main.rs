@@ -21,8 +21,8 @@ mod example_input;
 #[macro_use]
 extern crate lazy_static;
 
-pub const ESCAPE_BRACE_OPEN: &str = "'";
-pub const ESCAPE_BRACE_CLOSE: &str = "`";
+pub const ESCAPE_BRACE_OPEN: [&str; 2] = ["'", "{'"];
+pub const ESCAPE_BRACE_CLOSE: [&str; 2] = ["`", "`}"];
 pub const RULE_INVOCATION_CHAR: char = ':';
 
 static mut INDENT: usize = 0;
@@ -102,6 +102,10 @@ fn init_rules() -> Rules {
         Rule::new("swirl_version_0_0_3".to_string())
             .variant(RuleVariant::empty())
     });
+    rules.insert("swirl_version_0_1_0".to_string(), {
+        Rule::new("swirl_version_0_1_0".to_string())
+            .variant(RuleVariant::empty())
+    });
     rules
 }
 
@@ -167,7 +171,7 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
 fn process_file(target: &str, steps: MaybeInf<u32>, remove_defs: bool) -> Result<(), Box<dyn Error>> {
     let mut buffer = String::new();
     File::open(&target)?.read_to_string(&mut buffer)?;
-
+    
     let result = process(&buffer, &mut init_rules(), steps, remove_defs)?;
 
     File::create(format!("{}.out", target))?.write(result.as_bytes())?;
