@@ -1,0 +1,22 @@
+%: /usr/local/lib/swirl/init.swirl
+%: /usr/local/lib/swirl/bash.swirl
+
+age=042
+
+%if str "$age" equals "42" {
+    echo "Old enough."
+}
+
+%if str "$age" equals "042" {
+    echo "See, this is just a string-wise comparison."
+}
+
+amount=12
+
+%if num $amount equals 12 {
+    echo "See, this is number-wise comparison."
+}
+
+%if num $amount equals 012 {
+    echo "See, this is number-wise comparison."
+}

@@ -24,6 +24,7 @@ extern crate lazy_static;
 pub const ESCAPE_BRACE_OPEN: [&str; 2] = ["'", "{'"];
 pub const ESCAPE_BRACE_CLOSE: [&str; 2] = ["`", "`}"];
 pub const RULE_INVOCATION_CHAR: char = ':';
+pub const RULE_DEFINITION_KEY: &str = "%:";
 
 static mut INDENT: usize = 0;
 
@@ -51,7 +52,7 @@ fn test() {
 
 // first string in returned pair is the skipped text
 pub fn find_statement(input: &Input) -> Option<(&str, &Input)> {
-    input.find("%:").map(|i| (&input[..i], &input[i..]))
+    input.find(RULE_DEFINITION_KEY).map(|i| (&input[..i], &input[i..]))
 }
 
 use std::fs::File;
@@ -132,18 +133,18 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
             let rule_entry = rules.entry(name()).or_insert(Rule::new(name()));
             let name = name();
 
+            // next portion to process is after the current rule definition
+            input = statement_end.to_string();
+
             if variant.is_undefine() {
                 rule_entry.variants.clear();
             } else {
                 rule_entry.variants.push(variant.clone());
 
                 // empty name means invocation
-                if !name.is_empty() {
-                    // next portion to process is after the current rule definition
-                    input = statement_end.to_string();
-                } else {
+                if name.is_empty() {
                     // next portion to process is the output of application of the current rule definition (piped to all previous unnamed rule definitions)
-                    let new_input = rules[&name].match_sequence(statement_end, rules, &mut appleft)?;
+                    let new_input = rules[&name].match_sequence(&input, rules, &mut appleft)?;
                     // if this rule was just to be applied once, remove from definitions
                     if variant.shallow_call() {
                         rules.get_mut(&name).unwrap().variants.pop().unwrap();

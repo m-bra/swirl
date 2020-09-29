@@ -1,4 +1,3 @@
 
-- example: transpiling c-like syntax to bash syntax
+- example: transpiling c-like syntax to bash syntax (examples/bash.swirl)
 
-- "but so this is just a transpiler?" tell how the inspiration was terence mckenna talking about the dynamics of language

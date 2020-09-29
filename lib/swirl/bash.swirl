@@ -1,0 +1,12 @@
+
+%: {
+	%if str :a:balanced_string(" ") equals :b:balanced_string(" ") :body:balanced_string({ })
+} -> {
+	test :a = :b && :body
+}
+
+%: {
+	%if num :a:until_space equals b:until_space :body:balanced_string({ })
+} -> {
+	test :a -eq :b && :body
+}

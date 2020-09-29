@@ -1,1 +1,1 @@
-%: issues/edit.html.swirl
+%: examples/script.sh.swirl

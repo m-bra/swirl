@@ -1,5 +1,6 @@
 %: init_swirl {}
 %: init_swirl_version_0_1_0 {}
+%: print (print) {}
 %: groups_swirl {}
 %: 1wh {' `}
 %: 1wh {'
@@ -22,19 +23,28 @@
 %: aZ {::az}
 %: aZ {::AZ}
 %: 09 {0} %: 09 {1} %: 09 {2} %: 09 {3} %: 09 {4} %: 09 {5} %: 09 {6} %: 09 {7} %: 09 {8} %: 09 {9}
-%: specialchar {'!`}%: specialchar {'"`}%: specialchar {'#`}%: specialchar {'$`}%: specialchar {'%`}%: specialchar {'&`}%: specialchar {{''`}}%: specialchar {'(`}%: specialchar {')`}%: specialchar {'*`}%: specialchar {'+`}%: specialchar {',`}%: specialchar {'-`}%: specialchar {'.`}%: specialchar {'/`}%: specialchar {':`}%: specialchar {';`}%: specialchar {'<`}%: specialchar {'=`}%: specialchar {'>`}%: specialchar {'?`}%: specialchar {'@`}%: specialchar {'[`}%: specialchar {'\`}%: specialchar {']`}%: specialchar {'^`}%: specialchar {'_`}%: specialchar {{'``}}%: specialchar {'`}%: specialchar {'|`}%: specialchar {``}%: specialchar {'~`}
+%: specialchar {'!`}%: specialchar {'"`}%: specialchar {'#`}%: specialchar {'$`}%: specialchar {'%`}%: specialchar {'&`}%: specialchar {{''`}}%: specialchar {'(`}%: specialchar {')`}%: specialchar {'*`}%: specialchar {'+`}%: specialchar {',`}%: specialchar {'-`}%: specialchar {'.`}%: specialchar {'/`}%: specialchar {':`}%: specialchar {';`}%: specialchar {'<`}%: specialchar {'=`}%: specialchar {'>`}%: specialchar {'?`}%: specialchar {'@`}%: specialchar {'[`}%: specialchar {'\`}%: specialchar {']`}%: specialchar {'^`}%: specialchar {'_`}%: specialchar {{'``}}%: specialchar {'`}%: specialchar {'|`}%: specialchar {'~`}
 %: alnum {::aZ}
 %: alnum {::09}
 %: alnum_ {_}
 %: alnum_ {::alnum}
 %: opaquechar {::not_whitespace::anychar}
 %: not_whitespace (not) {::whitespace}
-%: remove_newlines {}
-%: remove_newlines {::not_end::remove_newline::remove_newlines}
-%: remove_newline {::anychar}
-%: remove_newline {::newline} -> {}
+%: remove_newlines_comments {}
+%: remove_newlines_comments {::not_end::remove_newline_comment::remove_newlines_comments}
+%: remove_newline_comment {::anychar}
+%: remove_newline_comment {::newline} -> {}
+%: remove_newline_comment {::comment} -> {}
+%: comment (local) {/::comment_inner/}
+%: comment_inner (local) {}
+%: comment_inner {::not_slash::any::comment_inner}
+%: not_slash (not) {/}
 %: not_end (not) {'END_INIT`}
-%: (call) {::remove_newlines}
+%: {::remove_newlines_comments}
+
+
+%: comment (undefine) {}
+%: comment_inner (undefine) {}
 
 %: uint {::09}
 %: uint {::09::uint}
@@ -71,12 +81,12 @@
 %: not_wcomma (not) {::wcomma}
 %: wcomma {::nwh,::1nwh}
 
-%: balanced_string (print) (:begin:until_space{''}:end:until_space)
-   {:begin`'::balanced_string_inner(:begin :end)`':end}
-%: balanced_string_inner(print)(:b:until_space{''}:e:until_space) {}
-%: balanced_string_inner(print)(:b:until_space{''}:e:until_space)
-   {:b`'::balanced_string_inner(:b :e)`':e`'::balanced_string_inner(:b :e)}
-%: balanced_string_inner(print)(:b:until_space{''}:e:until_space)
+%: balanced_string (print) (:begin:until_space{'`}:end:until_space)
+   {:begin'`::balanced_string_inner(:begin :end)'`:end}
+%: balanced_string_inner(print)(:b:until_space{'`}:e:until_space) {}
+%: balanced_string_inner(print)(:b:until_space{'`}:e:until_space)
+   {:b'`::balanced_string_inner(:b :e)'`:e'`::balanced_string_inner(:b :e)}
+%: balanced_string_inner(print)(:b:until_space{'`}:e:until_space)
    {::non_delimiter(:b :e)::balanced_string_inner(:b :e)}
 
 %: non_delimiter(:begin:until_space :end:until_space) {::not(:begin)::not(:end)}
@@ -87,4 +97,5 @@
 %: throw {::this_rule_promises_not_to_exist}
 %: unimplemented {::throw}
 
-%: (call) {END_'`INIT} -> {} END_INIT
+
+%: {END_'`INIT} -> {} END_INIT
