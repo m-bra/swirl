@@ -1,12 +1,37 @@
 
-%: {
-	%if str :a:balanced_string(" ") equals :b:balanced_string(" ") :body:balanced_string({ })
+%: peek_balanced_curly (not) {::not_balanced_curly}
+%: not_balanced_curly (not) {::balanced_curly}
+
+%: bash_macro {
+	%if str :a:c_quote equals :b:c_quote ::peek_balanced_curly
 } -> {
-	test :a = :b && :body
+	test :a = :b &&' `
+}
+
+%: bash_macro {
+	%if num :a:until_space equals :b:until_space ::peek_balanced_curly
+} -> {
+	test :a -eq :b &&' `
+}
+
+%: bash_macro {
+	%expect :a:until_space ::peek_balanced_curly
+} -> {
+	:a'=`"$1" && shift &&' `
+}
+
+%: bash_macro {
+	%expect :a:c_quote ::peek_balanced_curly
+} -> {
+	test :a = "$1" && shift &&' `
+}
+
+%: bash_macro {
+	%expect_end ::peek_balanced_curly
+} -> {
+	test "$1" = "" &&' `
 }
 
 %: {
-	%if num :a:until_space equals b:until_space :body:balanced_string({ })
-} -> {
-	test :a -eq :b && :body
+	::use_syntax_feature(bash_macro)
 }

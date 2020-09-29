@@ -157,7 +157,8 @@ pub enum WhiteSpaceHandling {
     Remove,
     // trims line beginnings (to remove indentation) and the beginning and ending of the whole invocation string
     TrimLineBegin,
-    /// trims like TrimLineBegin, and all other whitespaces (namely, whitespaces between non-whitespace characters)
+    /// trims like TrimLineBegin, 
+    /// and all other whitespaces (namely, whitespaces between non-whitespace characters)
     /// are substituted with the given invocation
     Substitute(Invocation),
     LeaveUnchanged,
@@ -188,7 +189,7 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, wrap_begin: char, wrap_
     let mut level = 1;
     let beginning = input;
 
-    // whether the incoming text is just whitespace followed by wrap_end [or newline]
+    // whether the incoming text is just whitespace followed by either wrap_end or newline
     // special case: if input[0] == wrap_end, then false (see [1])
     let is_whitespace_end = |input: &'a Input, no_new_line: bool| {
         let is_whitespace_until = |index| input[..index].chars().all(char::is_whitespace);
@@ -196,7 +197,7 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, wrap_begin: char, wrap_
 
         match input.find('\n') {
             None => match input.find(wrap_end) {
-                Some(end_index) => is_whitespace_until(end_index),
+                Some(end_index) => is_1whitespace_until(end_index),
                 None => false,
             },
             Some(newline_index) => match input.find(wrap_end) {

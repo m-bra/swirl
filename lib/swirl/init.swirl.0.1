@@ -35,19 +35,22 @@
 %: remove_newline_comment {::anychar}
 %: remove_newline_comment {::newline} -> {}
 %: remove_newline_comment {::comment} -> {}
-%: comment (local) {/::comment_inner/}
-%: comment_inner (local) {}
-%: comment_inner {::not_slash::any::comment_inner}
-%: not_slash (not) {/}
+%: comment (local)  {/::comment_inner/}
+%: comment_inner (local)  {}
+%: comment_inner_1  {::not_slash::anychar::comment_inner}
+%: comment_inner {::comment_inner_1}
+%: not_slash (not)  {/}
 %: not_end (not) {'END_INIT`}
 %: {::remove_newlines_comments}
 
-
-%: comment (undefine) {}
-%: comment_inner (undefine) {}
-
 %: uint {::09}
 %: uint {::09::uint}
+
+%: int {::uint}
+%: int {+::uint}
+%: int {-::uint}
+
+%: double {::int.::uint}
 
 %: index_number {::uint th} -> {:}
 %: index_number {first} -> {1}
@@ -57,6 +60,12 @@
 %: c_ident {::alnum_}
 %: c_ident {::alnum_::c_ident}
 
+%: c_quote {"::c_quote_inner"}
+%: c_quote_inner {}
+%: c_quote_inner {\::anychar::c_quote_inner}
+%: c_quote_inner {::not_quote_end::anychar::c_quote_inner}
+%: not_quote_end (not) {"}
+
 
 %: alnum_s {::c_ident}
 
@@ -64,10 +73,11 @@
 %: rest {}
 %: rest {::anychar::rest}
 
+/warning: might not work/
 %: not (not) (:r:rest) {:r}
 
 %: until_space {}
-%: until_space {::not(::whitespace)::anychar::until_space}
+%: until_space {::not_whitespace::anychar::until_space}
 
 %: until_str(:s:rest) {}
 %: until_str(:s:rest) {::not(::s)::anychar::until_space}
@@ -75,19 +85,30 @@
 / a wcomma is a string of the form \s*\,\s+ 
   and is not a usual comma.
   e.g. with this distinction the two punctuations have two different meanings:
-  crab,goyle , have eaten. /
+  crab,goyle, have eaten. /
 %: until_wcomma {::wcomma}
 %: until_wcomma {::not_wcomma::anychar::until_wcomma}
 %: not_wcomma (not) {::wcomma}
 %: wcomma {::nwh,::1nwh}
 
-%: balanced_string (print) (:begin:until_space{'`}:end:until_space)
+%: __comment {
+   this feature is not available since it uses tail-optimization on a rule which uses parameters, which is forbidden and will throw a panic.
+}
+%: balanced_string  (:begin:until_space{'`}' `:end:until_space)
    {:begin'`::balanced_string_inner(:begin :end)'`:end}
-%: balanced_string_inner(print)(:b:until_space{'`}:e:until_space) {}
-%: balanced_string_inner(print)(:b:until_space{'`}:e:until_space)
+%: balanced_string_inner(:b:until_space{'`}' `:e:until_space) {}
+%: balanced_string_inner(:b:until_space{'`}' `:e:until_space)
    {:b'`::balanced_string_inner(:b :e)'`:e'`::balanced_string_inner(:b :e)}
-%: balanced_string_inner(print)(:b:until_space{'`}:e:until_space)
+%: balanced_string_inner(:b:until_space{'`}' `:e:until_space)
    {::non_delimiter(:b :e)::balanced_string_inner(:b :e)}
+
+%: balanced_curly {{::balanced_curly_inner}}
+%: balanced_curly_inner {}
+%: balanced_curly_inner {'{`::balanced_curly_inner'}`::balanced_curly_inner}
+%: balanced_curly_inner {::not_brace::anychar::balanced_curly_inner}
+%: not_brace {::not_brace_begin::not_brace_end}
+%: not_brace_begin (not) {{'{`}}
+%: not_brace_end (not) {{'}`}}
 
 %: non_delimiter(:begin:until_space :end:until_space) {::not(:begin)::not(:end)}
 %: non_delim_text(:begin:until_space :end:until_space) {::unimplemented}
@@ -97,5 +118,14 @@
 %: throw {::this_rule_promises_not_to_exist}
 %: unimplemented {::throw}
 
+%: use_syntax_feature(:feature_ident:rest) {} -> {
+   %: use_feature_:feature_ident {} '
+  `%: use_feature_:feature_ident {{'::`}anychar'::use_feature_`:feature_ident} '
+  `%: use_feature_:feature_ident {{'::`}:feature_ident'::use_feature_`:feature_ident} '
+  `%: (syntax) {{'::use_feature_`}:feature_ident}
+}
+
+%: comment (undefine) {}
+%: comment_inner (undefine) {}
 
 %: {END_'`INIT} -> {} END_INIT

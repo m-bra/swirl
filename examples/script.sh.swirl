@@ -13,10 +13,32 @@ age=042
 
 amount=12
 
+
 %if num $amount equals 12 {
     echo "See, this is number-wise comparison."
 }
 
 %if num $amount equals 012 {
     echo "See, this is number-wise comparison."
+}
+
+gitt() {
+    %expect var {
+        echo "git $var"
+    }
+
+    %expect "clone" {
+        %expect "reposity" {
+            echo "git clone repository"
+        }
+        %expect_end {
+            echo "git clone"
+        }
+    }
+    %expect "history" {
+        echo "git history"
+    }
+    %expect_end {
+        echo "git"
+    }
 }

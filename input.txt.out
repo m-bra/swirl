@@ -2,7 +2,7 @@
 
 
 
-age=042
+   age=042
 
 test "$age" = "42" && {
     echo "Old enough."
@@ -23,8 +23,8 @@ test $amount -eq 012 && {
     echo "See, this is number-wise comparison."
 }
 
-gitt() {
-    var="$1" && shift && {
+git() {
+    var="$1" && shift {
         echo "git $var"
     }
 

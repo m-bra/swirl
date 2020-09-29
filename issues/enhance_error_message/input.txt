@@ -1,0 +1,16 @@
+%/: /usr/local/lib/swirl/init.swirl
+
+%: anychar (any) {}
+
+%: rest {}
+%: rest {::anychar::rest}
+
+%: use_feature (undefine) {}
+%: use_feature(:feature_ident:rest) {} -> {
+   %_: use_feature_:feature_ident {}
+   %_: use_feature_:feature_ident {{'::`}any'::use_feature_`:feature_ident}
+   %_: use_feature_:feature_ident {{'::`}:feature_ident'::use_feature_`:feature_ident}
+   %_: {'::use_feature_`:feature_ident}
+}
+
+%: {::use_feature(some_rule)}

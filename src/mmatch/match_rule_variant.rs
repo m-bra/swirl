@@ -65,6 +65,7 @@ impl RuleVariant {
 
             let name = name.as_ref();
 
+            //TODO: in the optimized tail recursion loop, test if we are in a user-caused infinite loop!
             let optimize_tail_recursion = unsafe {
                 self.header().end_invocation().map(|end_invoc| match end_invoc {
                         Invocation::RuleInvocation(_, n, _) if n == name => true,
@@ -105,7 +106,13 @@ impl RuleVariant {
                 || !recursive_param.is_empty() // [4] a not-supported example would be %: rec {::other::rec(recursive param)}
                 || self.flags().len() > 0 // no flags allowed
                 {
-                    unimplemented!()
+                    unimplemented!(
+                        "Rule variant {} of {} is to be tail-optimized, but it violates one of the following conditions:\n\
+                         1. header must not be negated\n\
+                         2. there must be no catch body\n\
+                         3. there must be no usage of parameters\n\
+                         4. no passing of parameters to itself 
+                         5. no flags allowed", variant_index, name);
                 }
 
                 self.header().without_tail_recursion(name, |header| {
@@ -113,6 +120,7 @@ impl RuleVariant {
                     let mut input_before = input; // read "input before rule application in frame"
                     let mut frame_stack = Vec::new();
                     let mut frame_result = Ok(("", InvocStrResult::empty())); // result of current frame
+                    let mut i = 0;
                     while {
                         frame_result = match_invocation_string(input_before, header, rules, &HashMap::new())
                             .negated(false /*see [1]*/);
@@ -121,6 +129,11 @@ impl RuleVariant {
                         let (input_after, results) = frame_result.unwrap();
                         frame_stack.push( (input_before, results));
                         input_before = input_after;
+
+                        i += 1;
+                        if i > 10000 {
+                            panic!("Infinite tail recursion...");
+                        }
                     }
 
                     let mut input = input_before;

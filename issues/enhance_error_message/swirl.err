@@ -1,0 +1,11 @@
+Ill-formed rule definition or invocation to unexisting file.
+candidates: 2
+  Expected 'End of escape string: '`}'', got '<end of file>'
+  candidates: 0
+
+  Error loading file 'use_feature(:feature_ident:rest)': No such file or directory (os error 2) 
+  candidates: 0
+
+
+ at 
+Error: ()
