@@ -4,3 +4,4 @@
  * isolate the meaning and syntax of what is represented by '%:': the entry point for swirl syntax.
    make it flexible.
    make simple tool which safely changes some $file o $file.swirl, escaping occurences of '%:' or whatever
+ * %: https://example.com/include.swirl

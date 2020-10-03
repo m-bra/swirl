@@ -27,7 +27,7 @@ impl RuleVariant {
     fn match_param(param_header: Option<&InvocationString>, param: &Input, rules: &Rules) -> MatchResult<HashMap<String, String>> {
         let (param_rest, param_result) = match param_header {
             Some(param_header) => {
-                let (param_rest, res) = match_invocation_string(param, param_header, rules, &HashMap::new()).negated(false)?;
+                let (param_rest, res) = match_invocation_string(param, param_header, rules, &HashMap::new(), true).negated(false)?;
                 (param_rest, res.named_bounds)
             }
             None => (param, HashMap::new())
@@ -89,7 +89,7 @@ impl RuleVariant {
                         return MatchError::expected("Any char", input).tap(Err)
                     }
                 } else {
-                    let header_result = match_invocation_string(input, &self.header(), rules, &param_result)
+                    let header_result = match_invocation_string(input, &self.header(), rules, &param_result, true)
                         .negated(self.header_negated());
                     let (input, header_result) = Self::catch_unknown_rule(header_result, self.unknown_rule_catch_body(), rules, input)?;
                     (input, self.make_result(header_result, rules)?)
@@ -122,7 +122,7 @@ impl RuleVariant {
                     let mut frame_result = Ok(("", InvocStrResult::empty())); // result of current frame
                     let mut i = 0;
                     while {
-                        frame_result = match_invocation_string(input_before, header, rules, &HashMap::new())
+                        frame_result = match_invocation_string(input_before, header, rules, &HashMap::new(), true)
                             .negated(false /*see [1]*/);
                         frame_result.is_ok()
                     } {

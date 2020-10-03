@@ -1,0 +1,8 @@
+%: lib/swirl/init.swirl
+%: eq(::c_ident|::c_ident) {} -> {false}
+%: eq(:a:c_ident|:a) {} -> {true}
+
+%: check {} -> {test failed.}
+%: check(false, true) {} -> {test passed.}
+
+%: {::check(::eq(hello|bye), ::eq(same|same))}

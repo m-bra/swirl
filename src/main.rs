@@ -44,12 +44,6 @@ fn get_indent() -> String {unsafe {"  ".repeat(INDENT)}}
 mod types;
 use types::*;
 
-#[test]
-fn test() {
-    // in my mind it works like that
-    assert_eq!(&"01234"[..2], "01");
-}
-
 // first string in returned pair is the skipped text
 pub fn find_statement(input: &Input) -> Option<(&str, &Input)> {
     input.find(RULE_DEFINITION_KEY).map(|i| (&input[..i], &input[i..]))
@@ -105,6 +99,10 @@ fn init_rules() -> Rules {
     });
     rules.insert("swirl_version_0_1_0".to_string(), {
         Rule::new("swirl_version_0_1_0".to_string())
+            .variant(RuleVariant::empty())
+    });
+    rules.insert("swirl_version_0_2_0".to_string(), {
+        Rule::new("swirl_version_0_2_0".to_string())
             .variant(RuleVariant::empty())
     });
     rules
@@ -230,9 +228,17 @@ fn main() -> Result<(), ()> {
     return process_file("input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e))
 }
 
+static mut VERBOSE: bool = false; 
+
+pub fn is_verbose() -> bool {
+    return unsafe {VERBOSE};
+}
+
 #[cfg(not(debug_assertions))]
 fn main() -> Result<(), ()>  {
-    let mut is_stepping = std::env::args().any(|s| s == "--step" || s == "-s");
+    let args = std::env::args();
+    let mut is_stepping = args.any(|s| s == "--step" || s == "-s");
+    VERBOSE = args.any(|s| s == "--verbose" || s == "-v");
 
     let (steps, remove_defs) = if is_stepping {
         (MaybeInf::Finite(1), false)
@@ -249,16 +255,3 @@ fn main() -> Result<(), ()>  {
     Ok(())
 }
 
-#[test]
-fn test_input() {
-    (|| -> Result<(), Box<dyn std::error::Error>> {
-        let mut buffer = String::new();
-        File::open("testinput.txt")?.read_to_string(&mut buffer)?;
-
-        let result = process(&buffer, &mut init_rules(), MaybeInf::Infinite, true)?;
-        let last_line = result.lines().last().unwrap();
-        assert_eq!(last_line, "success: testescape.)");
-
-        Ok(())
-    })().unwrap();
-}

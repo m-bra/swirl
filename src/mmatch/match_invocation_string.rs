@@ -9,10 +9,11 @@ pub struct InvocStrResult {
     pub indexed_bounds: Vec<String>,
 }
 
-// returned in the tuple is also the "result string" of evalualiting the invocation string.
+// returned in the tuple is also the "result string" of evaluating the invocation string.
 fn match_invocation_string_<'a>(
     maybe_input: Option<&'a Input>, invoc_str: &InvocationString, rules: &Rules,
     initial_vars: &HashMap<String, String>,
+    match_var_invocs: bool,
 ) 
     -> MatchResult<(Option<&'a Input>, InvocStrResult)> 
 {
@@ -57,12 +58,26 @@ fn match_invocation_string_<'a>(
                         indexed_bounds.push(result);
                     }
     
-                    (maybe_input.map(|_| input), Invocation::new_var_invocation(var))
+                    (maybe_input.map(|_| input), Some(Invocation::new_var_invocation(var)))
                 },
-                &Invocation::VarInvocation(ref var) => (maybe_input, Invocation::new_var_invocation(var)),
+                &Invocation::VarInvocation(ref var) => if match_var_invocs {
+                    // match var invocation with input.
+                    let varcontent = named_bounds.get(var)
+                        .ok_or(MatchError::unknown_variable(var, ""))?;
+                    let input = maybe_input.unwrap_or("");
+                    if input.starts_with(varcontent) {
+                        (Some(&input[varcontent.len()..]), None)
+                    } else {
+                        return MatchError::expected(&format!(":{} aka '{}'", var, varcontent), input).tap(Err);
+                    }
+                } else {
+                    (maybe_input, Some(Invocation::new_var_invocation(var)))
+                },
             };
 
-            var_invoc_str.add_invoc(invoc);
+            if let Some(invoc) = invoc {
+                var_invoc_str.add_invoc(invoc);
+            }
             maybe_input = new_maybe_input;
         }
     }
@@ -104,19 +119,23 @@ impl<'a, 'b> NegatableMatchResult<'a, 'b> {
 /*
  * Match invocation string against input. 
  * 
- * invocated rules will bind results to variable, which can be used by following invocations.
- * variable invocs are ignored; those can be substituted with the result vars.
+ * Invocated rules will bind results to variable, which can be used by following invocations.
  * 
- * this has the effect that results of rule invocations can be used in var invocations that precede them.
+ * Variable invocs will, depending on "match_var_invocs", either match with the input,
+ * or be passed to the result, so that they will later be substituted.
+ * Old behaviour was match_var_invocs = false. Except when invoc_str is a body part, you want match_var_invocs = true.
+ * 
+ * This has the effect that results of rule invocations can be used in var invocations that precede them.
  */
 pub fn match_invocation_string<'a, 'b>(
     input: &'a Input, 
     invoc_str: &'b InvocationString, 
     rules: &Rules,
     initial_vars: &HashMap<String, String>,
+    match_var_invocs: bool
 ) -> NegatableMatchResult<'a, 'b> {
     NegatableMatchResult(input, invoc_str, {
-        match match_invocation_string_(Some(input), invoc_str, rules, &initial_vars) {
+        match match_invocation_string_(Some(input), invoc_str, rules, &initial_vars, match_var_invocs) {
             Ok((Some(input), isr)) => Ok((input, isr)),
             Ok((None, _)) => unreachable!(),
             Err(m) => Err(m)
@@ -126,12 +145,13 @@ pub fn match_invocation_string<'a, 'b>(
 
 /// like match_invocation_string, but without matching against some input, just resolving rule invocations,
 /// which will throw an error if they expect any input, so they shouldn't.
+/// thus assuming match_var_invocs = false.
 pub fn match_invocation_string_pass<'b>(
     invoc_str: &'b InvocationString,
     rules: &Rules,
-    initial_vars: &HashMap<String, String>
+    initial_vars: &HashMap<String, String>,
 ) -> MatchResult<InvocStrResult> {
-    let (option, isr) = match_invocation_string_(None, invoc_str, rules, initial_vars)?;
+    let (option, isr) = match_invocation_string_(None, invoc_str, rules, initial_vars, false)?;
     assert!(option.is_none());
     Ok(isr)
 }
@@ -283,38 +303,6 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, wrap_begin: char, wrap_
     };
     let input = match_char(input, wrap_end).expect("Internal error: Next char after loop in match_invocation_string_def() has to be wrap_end!");
     Ok((input, Some(invocation_string.seal())))
-}
-
-#[test]
-fn _test_match_rule_head() {
-    let mut rules = HashMap::new();
-    rules.insert("number".to_string(), Rule {
-        name: "number".to_string(),
-        variants: vec![
-            RuleVariant::new(
-                InvocationString::literally("0"),
-                None
-            ),
-            RuleVariant::new(
-                InvocationString::literally("1"),
-                None
-            )
-        ]
-    });
-    let mut named_bounds = HashMap::new();
-    named_bounds.insert("n1".to_string(), "1".to_string());
-    named_bounds.insert("n2".to_string(), "0".to_string());
-    let indexed_bounds = vec!["1".to_string()];
-
-   /* let (_, rule_head) = match_invocation_string_def("{I. have.::n1:number:n2:number.:apples......::number}", '{', '}').unwrap();
-    let rule_head = rule_head.unwrap();
-
-    assert_eq!(
-        match_invocation_string_(
-            "I have:10:apples...1 and 2 bananas", &rule_head, false, &rules
-        ),
-        Ok((" and 2 bananas", (named_bounds, indexed_bounds)))
-    );*/
 }
 
 impl InvocStrResult {

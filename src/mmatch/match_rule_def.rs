@@ -3,38 +3,6 @@ use crate::*;
 
 use std::collections::HashSet;
 
-#[test]
-fn test_match_rule_def() {
-    let header = || {
-        let mut header = InvocationString::new();
-        header.add_char('.');
-        header.add_invoc(Invocation::new_rule_invocation("", "rule"));
-        header.add_char('}');
-        header.seal()
-    };
-
-    let body = {
-        let mut body = InvocationString::new();
-        body.add_invoc(Invocation::new_var_invocation("var"));
-        body.add_char(':');
-        body.add_invoc(Invocation::new_var_invocation("othervar"));
-        body.seal()
-    };
-
-    assert_eq!(
-        match_rule_definition("%:  name1{..::rule.}}19"),
-        Ok(("19", ("name1".into(), RuleVariant::new(header(), None))))
-    );
-
-    assert_eq!(
-        match_rule_definition("%:  name1{..::rule.}}    {:var.::othervar}19"),
-        Ok(("19", ("name1".into(), RuleVariant::new(
-            header(),
-            Some(body),//once told me
-        ))))
-    );
-}
-
 use std::char;
 
 pub enum SwirlStatement {

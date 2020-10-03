@@ -102,7 +102,7 @@ impl RuleVariant {
 
 
     pub fn on_enter(&self, rule_name: &str, input: &str) {
-        if self.0._flags.contains("print") || self.0._flags.contains("print_enter") {
+        if is_verbose() || self.0._flags.contains("print") || self.0._flags.contains("print_enter") {
             println!("{} --- Try variant %: {} {{{}}} on '{}'", get_indent(), rule_name, self.0._header, firstline(input));
             push_indent();
         }
@@ -113,7 +113,7 @@ impl RuleVariant {
     }
 
     pub fn on_success(&self, rule_name: &str, input: &str) {
-        if self.0._flags.contains("print") || self.0._flags.contains("print_success") {
+        if is_verbose() || self.0._flags.contains("print") || self.0._flags.contains("print_success") {
             pop_indent();
             println!("{} >>> Success!", get_indent());
         }

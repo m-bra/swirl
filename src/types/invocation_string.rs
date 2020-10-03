@@ -94,56 +94,6 @@ impl InvocationString {
     }
 }
 
-#[test]
-fn test_iter_last() {
-    let ab = Invocation::new_rule_invocation("a", "b");
-    let cd = Invocation::new_rule_invocation("c", "d");
-    let ef = Invocation::new_rule_invocation("e", "f");
-
-    // filter out ("", &[]) from InvocationString::iter()
-    let nonempty = |(string, slice): &(&str, &[_])| !string.is_empty() || slice.len() != 0;
-
-    let mut part = InvocationString::new();
-    part.add_invoc(ab.clone());
-    assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("", &[ab][..])));
-    part.add_str("01");
-    part.add_invoc(cd.clone());
-    part.add_invoc(ef.clone());
-    assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("01", &[cd, ef][..])));
-    part.add_str("23");
-    assert_eq!(part.clone().seal().iter().filter(nonempty).last(), Some(("23", &[][..])))
-}
-
-#[test]
-fn test_invocation_string_iter() {
-    let ab = Invocation::new_rule_invocation("a", "b");
-    let cd = Invocation::new_rule_invocation("c", "d");
-    let ef = Invocation::new_rule_invocation("e", "f");
-
-    let mut header = InvocationString::new();
-    header.add_invoc(ab.clone());
-    header.add_str("12");
-    header.add_invoc(cd.clone());
-    header.add_invoc(ef.clone());
-    header.add_str("34");
-    let header = header.seal();
-
-    assert_eq!(
-        header.iter().collect::<Vec::<_>>(),
-        vec![("", &[ab][..]), ("12", &[cd, ef][..]), ("34", &[][..])]
-    );
-
-    let header = match_invocation_string_def("{::expr {' or '} ::or}", '{', '}', WhiteSpaceHandling::Remove)  .unwrap().1.unwrap();
-
-    let expr = Invocation::new_rule_invocation("", "expr");
-    let or = Invocation::new_rule_invocation("", "or");
-
-    assert_eq!(
-        header.iter().collect::<Vec::<_>>(),
-        vec![("", &[expr][..]), (" or ", &[or][..]), ("", &[])]
-    );
-}
-
 impl InvocationStringBuilder {
     pub fn add_char(&mut self, c: char) {
         self.0.text.push(c);

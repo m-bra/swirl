@@ -1,4 +1,4 @@
-target=swirl.0.1.0
+target=swirl.0.2.0
 
 prj:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 

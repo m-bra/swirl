@@ -65,34 +65,3 @@ impl Rule {
         Ok(input)
     }
 }
-
-#[test]
-fn test_match_last() {
-    let mut rules = HashMap::new();
-    let ruleDigit = Rule {
-        name: "digit".to_string(),
-        variants: vec![
-            RuleVariant::new(
-                InvocationString::literally("0"), None,
-            ),
-            RuleVariant::new(
-                InvocationString::literally("1"), None,
-            )
-    ]};
-    let ruleDigits = Rule {
-        name: "digits".to_string(),
-        variants: vec![
-            RuleVariant::new(
-                parse_header("::digit").unwrap(), None
-            ),
-            RuleVariant::new(
-                parse_header(":d:digit::digits").unwrap(),
-                Some(parse_body("Two .times: :d:d").unwrap()),
-            ),
-    ]};
-    rules.insert("digit".to_string(), ruleDigit.clone());
-    rules.insert("digits".to_string(), ruleDigits.clone());
-
-    assert_eq!(ruleDigits.match_last("01110d01", "", &rules), Ok(("d01", "Two times: 00".to_string())));
-    assert!(ruleDigits.match_last("abcde", "", &rules).is_err());
-}
