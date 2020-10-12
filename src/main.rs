@@ -135,7 +135,7 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
             input = statement_end.to_string();
 
             if variant.is_undefine() {
-                rule_entry.variants.clear();
+                rules.remove(&name);
             } else {
                 rule_entry.variants.push(variant.clone());
 
@@ -236,9 +236,9 @@ pub fn is_verbose() -> bool {
 
 #[cfg(not(debug_assertions))]
 fn main() -> Result<(), ()>  {
-    let args = std::env::args();
+    let mut args = std::env::args();
     let mut is_stepping = args.any(|s| s == "--step" || s == "-s");
-    VERBOSE = args.any(|s| s == "--verbose" || s == "-v");
+    unsafe { VERBOSE = args.any(|s| s == "--verbose" || s == "-v") };
 
     let (steps, remove_defs) = if is_stepping {
         (MaybeInf::Finite(1), false)
