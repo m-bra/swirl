@@ -94,7 +94,7 @@ pub fn match_rule_invoc<'a>(input: &'a Input) -> MatchResult<(&'a Input, Invocat
     let (input, variable_ident) = match_ident(input).unwrap_or((input, ""));
     let input = match_char(input, RULE_INVOCATION_CHAR)?;
     let (input, rule_ident) = match_ident(input)?;
-    let (input, invoc) = match_invocation_string_def(input, '(', ')', &WhiteSpaceHandling::LeaveUnchanged)?;
+    let (input, invoc) = match_invocation_string_def(input, '(', ')', &WhiteSpaceHandling::TrimLineBegin)?;
     let invoc = invoc.unwrap_or(InvocationString::empty());
 
     (input, Invocation::new_rule_invoc_with_param(variable_ident, rule_ident, invoc)).tap(Ok)
