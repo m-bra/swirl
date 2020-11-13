@@ -6,22 +6,22 @@ static mut first: bool = true;
 
 impl RuleVariant {
 
+    // Returns None if no "unknown rule" error was thrown
+    // Returns Some if such an error has been caught, with the result of the catch body.
     fn catch_unknown_rule<'a>(
-        result: MatchResult<(&'a Input, InvocStrResult)>, 
+        result: &MatchResult<(&'a Input, InvocStrResult)>, 
         catch_body: Option<&InvocationString>,
-        rules: &Rules,
-        input: &'a Input // the input to return when catch body is used
-    ) 
-         -> MatchResult<(&'a Input, InvocStrResult)> {
+        rules: &Rules
+    ) -> MatchResult<Option<String>> {
         match result {
-            Ok(x) => Ok(x),
+            Ok(_) => None,
             Err(err) if err.is_unknown_rule() && catch_body.is_some() => {
                 let catch_body = catch_body.unwrap();
                 let catch_body_result = match_invocation_string_pass(catch_body, rules, &HashMap::new())?;
-                Ok((input, catch_body_result))
+                Some(catch_body_result.bind_vars()?)
             }
-            Err(err) => Err(err), 
-        }
+            Err(err) => None, 
+        }.tap(Ok)
     }
 
     fn match_param(param_header: Option<&InvocationString>, param: &Input, rules: &Rules) -> MatchResult<HashMap<String, String>> {
@@ -91,8 +91,12 @@ impl RuleVariant {
                 } else {
                     let header_result = match_invocation_string(input, &self.header(), rules, &param_result, true)
                         .negated(self.header_negated());
-                    let (input, header_result) = Self::catch_unknown_rule(header_result, self.unknown_rule_catch_body(), rules, input)?;
-                    (input, self.make_result(header_result, rules)?)
+                    if let Some(result) = Self::catch_unknown_rule(&header_result, self.unknown_rule_catch_body(), rules)? {
+                        (input, result)
+                    } else {
+                        let (input, header_result) = header_result?;
+                        (input, self.make_result(header_result, rules)?)
+                    }
                 }
             } else {
                 let (recursion_var, recursive_param) = match unsafe { self.header().end_invocation().unwrap() } {

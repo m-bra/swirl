@@ -61,7 +61,7 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
         return MatchError::new("Can only use flag (once) on unnamed rules").tap(Err);
     }
 
-    // {parameter header} {input header with :rule:invocation.s} -> {body with :var.s} (catch unknown rule) {body with :var.s}
+    // (parameter header) {input header with :rule:invocation.s} -> {body with :var.s} (catch unknown rule) {body with :var.s}
 
     let symbolic_whitespace = WhiteSpaceHandling::Substitute(Invocation::new_rule_invocation("", "swirl_inserted_whitespace"));
 

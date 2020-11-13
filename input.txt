@@ -1,1 +1,6 @@
-%: examples/script.sh.swirl
+
+%: {::non_existing_rule} -> {
+    all okay.
+} (catch unknown rule) {
+    caught.
+}

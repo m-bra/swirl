@@ -56,7 +56,13 @@ impl MatchError {
     }
 
     pub fn unknown_rule(rule_ident: &str, input: &str) -> MatchError {
-        MatchError::new(format!("Unknown rule: '{}': '{}'", rule_ident, error_region(input)))
+        MatchError {
+            _fatal: false,
+            error_type: ErrorType::UnknownRule {
+                msg: format!("Unknown rule: '{}': '{}'", rule_ident, error_region(input))
+            },
+            backtrace: Vec::new()
+        }
     }
 
     pub fn rule_variant_verification_failure(rule_name: &str, rule_variant: &UntrustedRuleVariant, verifier_message: String) -> MatchError {
