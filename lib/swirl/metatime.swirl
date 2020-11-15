@@ -1,0 +1,157 @@
+%: {::swirl_version_0_2_0}
+
+%: //usr//local//lib//swirl//init.swirl.0.1
+%: //usr//local//lib//swirl//lean_comment.swirl
+%: //usr//local//lib//swirl//experimental//c_syntax.swirl
+
+/ metatime.swirl /
+
+%: metatime_set_flag {:name:alnum_s} -> {
+   %: :name (clear) {}
+   %: :name {}
+}
+
+%: metatime_clear_flag {:name:alnum_s} -> {
+   %: :name (clear) {}
+}
+
+%: metatime_set {:name:alnum_s = :value:c_string} -> {
+   %: :name (clear) {}
+   %: :name {:value}
+}
+
+/ translates boolean expression to swirl code, which after execution indicates the result of the expression: /
+/ expression is true iff rule metatime_true exists /
+%: metatime_bool_expr {true} -> {
+   %: metatime_true (clear) {}
+   '%:` metatime_true {}
+}
+%: metatime_bool_expr {false} -> {
+   '%:` metatime_true (clear) {}
+}
+
+%: metatime_bool_expr {not :code:metatime_bool_expr} -> {
+   :code
+   
+   / swap defined state of metatime_true /
+
+   '%:`  {{'::`}metatime_true ''(uid) (2348796298)``} -> {
+      %'':`` metatime_true (clear) {}
+   } (catch unknown rule) {
+      %'':`` metatime_true (clear) {}
+      %'':`` metatime_true {}
+      %'':`` { (uid) (2348796298)} -> {}
+   } (uid) (2348796298)
+}
+
+%: metatime_bool_expr {rule :name:alnum_s exists} -> {
+   %':`  {{'::`}:name ''(uid) (32487628)``} -> {
+      %'':`` metatime_true (clear) {}
+      %'':`` metatime_true {}
+   } (catch unknown rule) {
+      %'':`` metatime_true (clear) {}
+      %'':`` { (uid) (32487628)} -> {}
+   } (uid) (32487628)
+}
+
+/ boolean operations can only be evaluated inside parentheses, because they indicate to the parser that operations may come /
+%: metatime_bool_op {and}
+%: resolve_bool_str_combination(true and true) {} -> {
+   '%:  {::metatime_set_flag} metatime_true`
+}
+%: resolve_bool_str_combination(true and false) {} -> {
+   '%:  {::metatime_clear_flag} metatime_true`
+}
+%: resolve_bool_str_combination(false and true) {} -> {
+   '%:  {::metatime_clear_flag} metatime_true`
+}
+%: resolve_bool_str_combination(false and false) {} -> {
+   '%:  {::metatime_clear_flag} metatime_true`
+}
+%: metatime_bool_expr {(:code_a:metatime_bool_expr :op:metatime_bool_op :code_b:metatime_bool_expr)} -> {
+      / evaluate both codes and store the result in metatime_a and metatime_b as string "true" or "false" /
+      :code_a
+      %':` {{'::`}metatime_true ''(uid) (8937649574)``} -> {
+         %':` metatime_a (clear) {}
+         %':` metatime_a {} -> {true}
+      } (catch unknown rule) {
+         %':` metatime_a (clear) {}
+         %: metatime_a {} -> {false}
+         %: { (uid) (8937649574)} -> {}
+      } (uid) (8937649574)
+
+      :code_b
+      %':`  {{'::`}metatime_true ''(uid) (348756292347)``} -> {
+         %':` metatime_b (clear) {}
+         %':` metatime_b {} -> {true}
+      } (catch unknown rule) {
+         %':` metatime_b (clear) {}
+         %: metatime_b {} -> {false}
+         %: { (uid) (348756292347)} -> {}
+      } (uid) (348756292347)
+
+      
+      '%: {::resolve_bool_str_combination(::metatime_a `:op' ::metatime_b)}`
+   }
+
+/ The convention is as such: That for every existing rule X*__swirl_namespace_convention /
+/ The rule identifier X is defined to be a *namespace* /
+/ And all rule identifiers X_Y* are "namespace children" of X. /
+%: metatime_bool_expr {namespace :name:alnum_s exists} -> {
+   %':` {{'::`}metatime_bool_expr} (rule :name exists and rule :name'__swirl_namespace_convention` exists)
+}
+
+%: metatime_bool_expr {namespace :name:alnum_s has tag :tag:alnum_s} -> {
+   %: {{'::`}metatime_bool_expr} (namespace :name exists and rule :name'__swirl_tag_`:tag exists)
+}
+
+/ eval interprets statements in the parameter and returns compiled swirl instructions. /
+/ new eval statements can be introduced before and after metatime_eval calls (by adding variants to metatime_eval) /
+
+%: metatime_eval(assert :bool_eval:metatime_bool_expr . :code:continue_eval) {} -> {
+   :bool_eval
+   %':` {{'::`}metatime_true ''(uid) (9273629276)``} -> {} (catch unknown rule) {
+      '::throw assert failed.`
+      %: { (uid) (9273629276)} -> {}
+   } (uid) (9273629276)
+
+   :code
+}
+
+%: metatime_eval(create namespace :name:alnum_s with tag :tag:alnum_s . :code:continue_eval) {} -> {
+  %':` {{'::`}metatime_eval(
+     assert not namespace :name exists .
+  )}
+  %':` :name {}
+  %':` :name'__swirl_namespace_convention` {}
+  %':` :name'__swirl_tag_`:tag {}
+
+  :code 
+}
+
+/ a top-level rule is a rule that is called//initiated at some point in the file.
+  after this point, the rule is tried, and if it does not succeed, go to the next character and repeat until EOF. /
+
+%: metatime_eval(toplevel :name:alnum_s (work at :namespace:alnum_s) . :c:continue_eval) {} -> {
+   :tmprule:copy(:namespace'_toplevel_`:name)
+
+   '%:` {{'::`}metatime_eval(
+      assert namespace :namespace has tag workspace .
+      assert not rule :tmprule exists .
+   )}
+
+   %: :tmprule {}
+   %: :tmprule {{'::`}anychar'::`:tmprule}
+   %: :tmprule {{'::`}:name'::`:tmprule}
+
+   %: (syntax) {{'::`}:namespace'_toplevel`}
+
+   :c
+}
+
+%: assert_empty() {}
+
+%: continue_eval {:r:rest::assert_empty(:r)}
+%: continue_eval {:r:rest} -> {::metatime_eval(:r)}
+
+/ end of metatime.swirl /

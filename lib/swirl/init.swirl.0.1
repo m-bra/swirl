@@ -115,7 +115,9 @@
 
 %: swirl_quote {::balanced_string(::unimplemented)}
 
-%: throw {::this_rule_promises_not_to_exist}
+%: copy(:x:rest) {} -> {:x}
+
+%: throw (print) {::this_rule_promises_not_to_exist}
 %: unimplemented {::throw}
 
 %: use_syntax_feature(:feature_ident:rest) {} -> {

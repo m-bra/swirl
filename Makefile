@@ -4,14 +4,14 @@ prj:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 all: bin/$(target)
 
-bin/$(target):
+bin/$(target): src/main.rs
 	mkdir -p bin
 	cargo build --release
 	mv target/release/swirl bin/$(target)
 
 .PHONY: run
 run: bin/$(target)
-	bin/$(target)
+	cat input.txt | bin/$(target) > input.txt.out
 
 .PHONY: clean
 clean:

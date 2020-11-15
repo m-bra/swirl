@@ -2,7 +2,47 @@
 %: eq(::c_ident|::c_ident) {} -> {false}
 %: eq(:a:c_ident|:a) {} -> {true}
 
-%: check {} -> {test failed.}
-%: check(false, true) {} -> {test passed.}
+%: expect(::rest) {} -> {::throw}
+%: expect('true`) {} -> {}
 
-%: {::check(::eq(hello|bye), ::eq(same|same))}
+%: negate('false`) {} -> {true}
+%: negate('true`) {} -> {false}
+
+%: swirl_inserted_whitespace (undefine) {}
+%: swirl_inserted_whitespace {}
+
+%: {} -> {'
+`  ::expect(true)'
+`  ::expect(::negate(false))'
+`  ::expect(::negate(::eq(hello|bye)))'
+`  ::expect(::eq(same|same))'
+`}
+
+%: one {} -> {1}
+
+%: {
+   :y:one
+   :x:copy(::one'_`:y'_`1)
+} -> {
+   ::expect(::eq(:x|1_1_1))
+}
+
+%: //usr//local//lib//swirl//metatime.swirl
+
+%: {::metatime_eval(
+   'assert (true and true) .`
+)}
+
+%: test_rule {}
+
+
+%: {::metatime_eval(
+   'assert true .
+   assert not false .
+   assert not (true and (false and false)) .
+   assert rule test_rule exists .
+   create namespace test_namespace with tag test_tag  .
+   assert namespace test_namespace exists .
+   assert namespace test_namespace has tag test_tag .
+   assert not namespace test_namespace has tag some_other_tag .`
+)}

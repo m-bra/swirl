@@ -5,3 +5,6 @@
    make it flexible.
    make simple tool which safely changes some $file o $file.swirl, escaping occurences of '%:' or whatever
  * %: https://example.com/include.swirl
+ * swirl can also function as an on-the-fly preprocessor for interpreted languages.
+
+ * library shouldnt include from /usr/local/lib/ ...
