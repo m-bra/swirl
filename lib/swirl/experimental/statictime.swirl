@@ -7,7 +7,7 @@
 %: /usr/local/lib/swirl/init.swirl.0.1
 %: /usr/local/lib/swirl/lean_comment.swirl
 %: /usr/local/lib/swirl/experimental/c_syntax.swirl
-%: /usr/local/lib/swirl/experimental/metatime.swirl
+%: /usr/local/lib/swirl/metatime.swirl
 
 /' 
 

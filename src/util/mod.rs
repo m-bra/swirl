@@ -4,7 +4,7 @@ pub fn _firstline<'a>(string: &str) -> &str {
 }
 
 pub fn firstline<'a>(string: &str) -> &str {
-    _firstline(string)
+    _firstline(string.trim())
 }
 
 mod dump_file;
@@ -19,8 +19,8 @@ pub use clone_unsafecell::*;
 use std::ops::*;
 use std::cmp::*;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-pub enum MaybeInf<T> where T: Eq {
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum MaybeInf<T> where T: Eq + Clone + Copy {
     Finite(T),
     Infinite
 }
@@ -33,7 +33,7 @@ fn test_ord() {
     assert!(MaybeInf::<i32>::Infinite == MaybeInf::Infinite);
 }
 
-impl<T: SubAssign> SubAssign<T> for MaybeInf<T> where T: Eq {
+impl<T: SubAssign> SubAssign<T> for MaybeInf<T> where T: Eq + Clone + Copy {
     fn sub_assign(&mut self, rhs: T) {
         match self {
             MaybeInf::Finite(x) => {

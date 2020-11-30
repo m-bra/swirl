@@ -44,14 +44,15 @@
    } (uid) (2348796298)
 }
 
+/ warning: the rule, if it exists, must have the form %: rule {} /
 %: metatime_bool_expr {rule :name:alnum_s exists} -> {
-   %':`  {{'::`}:name ''(uid) (32487628)``} -> {
+   %':`  {{'::`}:name ''(uid) (2346283497)``} -> {
       %'':`` metatime_true (clear) {}
       %'':`` metatime_true {}
    } (catch unknown rule) {
       %'':`` metatime_true (clear) {}
-      %'':`` { (uid) (32487628)} -> {}
-   } (uid) (32487628)
+      %'':`` { (uid) (2346283497)} -> {}
+   } '(uid) (2346283497)`
 }
 
 / boolean operations can only be evaluated inside parentheses, because they indicate to the parser that operations may come /
@@ -108,10 +109,10 @@
 / eval interprets statements in the parameter and returns compiled swirl instructions. /
 / new eval statements can be introduced before and after metatime_eval calls (by adding variants to metatime_eval) /
 
-%: metatime_eval(assert :bool_eval:metatime_bool_expr . :code:continue_eval) {} -> {
+%: metatime_eval(assert :bool_eval:metatime_bool_expr or throw :message:alnum_s . :code:continue_eval) {} -> {
    :bool_eval
    %':` {{'::`}metatime_true ''(uid) (9273629276)``} -> {} (catch unknown rule) {
-      '::throw assert failed.`
+      '::throw_`:message
       %: { (uid) (9273629276)} -> {}
    } (uid) (9273629276)
 
@@ -120,7 +121,7 @@
 
 %: metatime_eval(create namespace :name:alnum_s with tag :tag:alnum_s . :code:continue_eval) {} -> {
   %':` {{'::`}metatime_eval(
-     assert not namespace :name exists .
+     assert not namespace :name exists or throw 'namespace_`:name'_already_exists` .
   )}
   %':` :name {}
   %':` :name'__swirl_namespace_convention` {}
@@ -136,15 +137,15 @@
    :tmprule:copy(:namespace'_toplevel_`:name)
 
    '%:` {{'::`}metatime_eval(
-      assert namespace :namespace has tag workspace .
-      assert not rule :tmprule exists .
+      assert namespace :namespace has tag workspace or throw invalid_workspace .
+      assert not rule :tmprule exists or throw internal_error_2463827 .
    )}
 
    %: :tmprule {}
    %: :tmprule {{'::`}anychar'::`:tmprule}
    %: :tmprule {{'::`}:name'::`:tmprule}
 
-   %: (syntax) {{'::`}:namespace'_toplevel`}
+   %: (syntax) {{'::`}:tmprule}
 
    :c
 }

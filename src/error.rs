@@ -94,7 +94,11 @@ impl MatchError {
                 let subs = subErrors.iter().map(|err| {
                     err.display_without_backtrace(indent.to_string() + "  ")
                 }).collect::<Vec<_>>().join("");
-                format!("{}{}\n{}candidates: {}\n{}\n", indent, msg, indent, subErrors.len(), subs)
+                if !subErrors.is_empty() {
+                    format!("{}{}\n{}candidates: {}\n{}\n", indent, msg, indent, subErrors.len(), subs)
+                } else {
+                    format!("{}{}\n", indent, msg)
+                }
             }
             ErrorType::UnknownRule {msg} => {
                 format!("{}{}\n", indent, msg)

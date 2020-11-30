@@ -8,3 +8,11 @@
  * swirl can also function as an on-the-fly preprocessor for interpreted languages.
 
  * library shouldnt include from /usr/local/lib/ ...
+
+ * make backtrace userdefined... 
+   * add syntax: %: (backtrace) <rule definition>
+   * rule definition name must be empty
+   * applies rule definition once
+   * result is added to the backtrace, which will be printed on an uncaught error.
+   * add syntax %: (backtrace) (pop) <warning if followed by rule definition> 
+             or %: (pop) (backtrace) <warning if followed by rule definition> 

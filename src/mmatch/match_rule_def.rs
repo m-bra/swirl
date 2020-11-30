@@ -40,6 +40,8 @@ pub fn match_variant_flag(input: &Input) -> MatchResult<(&Input, &str)> {
     Ok((input, ident))
 }
 
+pub const SWIRL_INSERTED_WHITESPACE_IDENT: &str = "swirl_inserted_whitespace";
+
 /// matches the parts of a rule after '%:' (so that caller might scan for '%:' instead of calling this function everytime)
 pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Input, (String, RuleVariant))> {
     // ruleName
@@ -63,7 +65,7 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
 
     // (parameter header) {input header with :rule:invocation.s} -> {body with :var.s} (catch unknown rule) {body with :var.s}
 
-    let symbolic_whitespace = WhiteSpaceHandling::Substitute(Invocation::new_rule_invocation("", "swirl_inserted_whitespace"));
+    let symbolic_whitespace = WhiteSpaceHandling::Substitute(Invocation::new_rule_invocation("", SWIRL_INSERTED_WHITESPACE_IDENT));
 
     let (input, parameter_header_option) = match_invocation_string_def(input, '(', ')', &symbolic_whitespace)?;
     let input = match_whitespaces(input)?;

@@ -17,13 +17,19 @@ impl fmt::Display for Invocation {
 impl fmt::Display for InvocationString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (part, invocations) in unsafe {self.iter()} {
-            if part.contains(char::is_whitespace) {
-                write!(f, "{{'{}'}} ", part)?;
-            } else {
-                write!(f, "{} ", part)?;
+            if !part.is_empty() {
+                write!(f, "'{}`", part)?;
             }
             for invocation in invocations {
-                write!(f, "{} ", invocation)?;
+                if let Invocation::RuleInvocation(_, ident, _) = invocation {
+                    if ident == SWIRL_INSERTED_WHITESPACE_IDENT {
+                        write!(f, " ")?;
+                    } else {
+                        write!(f, "{}", invocation)?;
+                    }
+                } else {
+                    write!(f, "{}", invocation)?;
+                }
             }
         }
         Ok(())

@@ -1,6 +1,2 @@
 
-%: {::non_existing_rule} -> {
-    all okay.
-} (catch unknown rule) {
-    caught.
-}
+%: src/test.swirl

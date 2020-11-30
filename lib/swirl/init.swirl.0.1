@@ -35,6 +35,7 @@
 %: remove_newline_comment {::anychar}
 %: remove_newline_comment {::newline} -> {}
 %: remove_newline_comment {::comment} -> {}
+%: remove_newline_comment {//} -> {/}
 %: comment (local)  {/::comment_inner/}
 %: comment_inner (local)  {}
 %: comment_inner_1  {::not_slash::anychar::comment_inner}
@@ -57,8 +58,8 @@
 %: index_number {second} -> {2}
 %: index_number {third} -> {3}
 
-%: c_ident {::alnum_}
-%: c_ident {::alnum_::c_ident}
+%: alnum_s {::alnum_}
+%: alnum_s {::alnum_::alnum_s}
 
 %: c_quote {"::c_quote_inner"}
 %: c_quote_inner {}
@@ -67,7 +68,11 @@
 %: not_quote_end (not) {"}
 
 
-%: alnum_s {::c_ident}
+%: c_ident {::alnum_s}
+%: swirl_ident {::alnum_s}
+
+%: swirl_var {':`:a:swirl_ident}
+%: swirl_rule_invocation {':`:a:swirl_ident':`:a:swirl_ident}
 
 / note to swirl: this pattern can be optimized easily and effectively. /
 %: rest {}
@@ -82,6 +87,9 @@
 %: until_str(:s:rest) {}
 %: until_str(:s:rest) {::not(::s)::anychar::until_space}
 
+%: line_rest {::until_space(
+)}
+
 / a wcomma is a string of the form \s*\,\s+ 
   and is not a usual comma.
   e.g. with this distinction the two punctuations have two different meanings:
@@ -94,12 +102,12 @@
 %: __comment {
    this feature is not available since it uses tail-optimization on a rule which uses parameters, which is forbidden and will throw a panic.
 }
-%: balanced_string  (:begin:until_space{'`}' `:end:until_space)
+%: balanced_string  (:begin:until_space{'`}' `:end:rest)
    {:begin'`::balanced_string_inner(:begin :end)'`:end}
-%: balanced_string_inner(:b:until_space{'`}' `:e:until_space) {}
-%: balanced_string_inner(:b:until_space{'`}' `:e:until_space)
+%: balanced_string_inner(:b:until_space{'`}' `:e:rest) {}
+%: balanced_string_inner(:b:until_space{'`}' `:e:rest)
    {:b'`::balanced_string_inner(:b :e)'`:e'`::balanced_string_inner(:b :e)}
-%: balanced_string_inner(:b:until_space{'`}' `:e:until_space)
+%: balanced_string_inner(:b:until_space{'`}' `:e:rest)
    {::non_delimiter(:b :e)::balanced_string_inner(:b :e)}
 
 %: balanced_curly {{::balanced_curly_inner}}
@@ -120,7 +128,17 @@
 %: throw (print) {::this_rule_promises_not_to_exist}
 %: unimplemented {::throw}
 
-%: use_syntax_feature(:feature_ident:rest) {} -> {
+%: print(:r:rest) {} -> {
+   %: (print) {:r}
+}
+
+%: swirl_lib {//usr//local//lib//swirl//}
+
+/ define new syntax feature: work at block /
+
+%: activate_rule(:feature:alnum_s) {::use_syntax_feature(:feature)} 
+
+%: /(deprecated naming)/ use_syntax_feature(:feature_ident:alnum_s) {} -> {
    %: use_feature_:feature_ident {} '
   `%: use_feature_:feature_ident {{'::`}anychar'::use_feature_`:feature_ident} '
   `%: use_feature_:feature_ident {{'::`}:feature_ident'::use_feature_`:feature_ident} '

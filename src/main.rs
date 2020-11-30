@@ -108,11 +108,12 @@ fn init_rules() -> Rules {
     rules
 }
 
-pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remove_defs: bool) -> MatchResult<String> {
-    let mut result = String::new();
+pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remove_defs: bool, mut receive_output: impl FnMut(&str) -> MatchResult<()>) -> MatchResult<()> {
     let mut input = input.to_string();
 
     while let Some((skipped_text, statement_begin)) = find_statement(&input) {
+        // todo: use swirl to sweeten this up to 
+        // break if appleft == MaybeInf::Finite(0);
         if appleft == MaybeInf::Finite(0) {
             break;
         }
@@ -120,9 +121,9 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
         let (statement_end, (name, maybe_variant)) = match_statement(statement_begin)?;
         // all text until the current rule definition remains untouched (because it is between the beginning/a rule definition and a rule definition)
         // so just push it to the result string
-        result.push_str(skipped_text);
+        receive_output(skipped_text)?;
         if !remove_defs {
-            result.push_str(&statement_begin[..(statement_begin.len() - statement_end.len())]);
+            receive_output(&statement_begin[..(statement_begin.len() - statement_end.len())])?;
         }
 
         // add variant to definitions (or remove) (perhaps call it)
@@ -162,16 +163,17 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
 
     }
 
-    // the rest of the input contains no more rule definitions, so push it to the results
-    result.push_str(&input);
-    Ok(result)
+    // the rest of the input contains no more rule definitions, so output it
+    receive_output(&input)?;
+    Ok(())
 }
 
 fn process_file(target: &str, steps: MaybeInf<u32>, remove_defs: bool) -> Result<(), Box<dyn Error>> {
     let mut buffer = String::new();
     File::open(&target)?.read_to_string(&mut buffer)?;
     
-    let result = process(&buffer, &mut init_rules(), steps, remove_defs)?;
+    let mut result = String::new();
+    process(&buffer, &mut init_rules(), steps, remove_defs, |lines| result.push_str(lines).tap(Ok))?;
 
     File::create(format!("{}.out", target))?.write(result.as_bytes())?;
 
@@ -221,20 +223,13 @@ fn repl() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[cfg(debug_assertions)]
-fn main() -> Result<(), ()> {
-    println!(" -- Debug mode --");
-    unsafe { ::std::intrinsics::breakpoint() }
-    return process_file("input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e))
-}
-
 static mut VERBOSE: bool = false; 
 
 pub fn is_verbose() -> bool {
     return unsafe {VERBOSE};
 }
 
-#[cfg(not(debug_assertions))]
+//#[cfg(not(debug_assertions))]
 fn main() -> Result<(), ()>  {
     let mut args = std::env::args();
     let mut is_stepping = args.any(|s| s == "--step" || s == "-s");
@@ -246,12 +241,31 @@ fn main() -> Result<(), ()>  {
         (MaybeInf::Infinite, true)
     };
 
+    if cfg!(debug_assertions) {
+        println!(" -- Debug mode --");
+        unsafe { ::std::intrinsics::breakpoint() }
+        return process_file("input.txt", MaybeInf::Infinite, true).map_err(|e| eprintln!("{}", e));
+    }
+
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer)
         .map_err(|e| eprintln!("{}", e))?;
-    let result = process(&buffer, &mut init_rules(), steps, remove_defs)
-        .map_err(|e| eprintln!("{}", e))?;
-    println!("{}", result);
-    Ok(())
+    process(&buffer, &mut init_rules(), steps, remove_defs, |lines| {
+        println!("{}", lines);
+        io::stdout().flush().unwrap();
+        Ok(())
+    }).map_err(|e| eprintln!("{}", e))
+
+    /* let mut rules = init_rules();
+    let mut userline = String::new();
+    while io::stdin().read_line(&mut userline).is_ok() {
+        process(&userline, &mut rules, steps, remove_defs, |lines| {
+            println!("{}", lines);
+            io::stdout().flush().unwrap();
+            Ok(())
+        }).map_err(|e| eprintln!("{}", e))?;
+        userline.clear();
+    }
+    Ok(()) */
 }
 

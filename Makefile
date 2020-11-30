@@ -2,7 +2,7 @@ target=swirl.0.2.0
 
 prj:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-all: bin/$(target)
+all: build
 
 bin/$(target): src/main.rs
 	mkdir -p bin
@@ -10,8 +10,18 @@ bin/$(target): src/main.rs
 	mv target/release/swirl bin/$(target)
 
 .PHONY: run
-run: bin/$(target)
+run: build
 	cat input.txt | bin/$(target) > input.txt.out
+
+.PHONY: test
+test:
+	cat src/test.swirl | swirl
+
+.PHONY: build
+build:
+	mkdir -p bin
+	cargo build --release
+	mv target/release/swirl bin/$(target)
 
 .PHONY: clean
 clean:

@@ -65,7 +65,6 @@ impl UntrustedRuleVariant {
     }
 }
 
-
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct RuleVariant(UntrustedRuleVariant);
 
@@ -103,7 +102,14 @@ impl RuleVariant {
 
     pub fn on_enter(&self, rule_name: &str, input: &str) {
         if is_verbose() || self.0._flags.contains("print") || self.0._flags.contains("print_enter") {
-            println!("{} --- Try variant %: {} {{{}}} on '{}'", get_indent(), rule_name, self.0._header, firstline(input));
+            let rule_name = if rule_name.is_empty() {
+                String::new()
+            } else {
+                let after = if self.0._parameter_header.is_some() {""} else {" "};
+                format!("{}{}", rule_name, after)
+            };
+            let parameters = self.0._parameter_header.as_ref().map(|parameter_header| format!("({}) ", parameter_header)).unwrap_or("".to_string());
+            println!("{} --- Try variant %: {}{}{{{}}} on line '{}'", get_indent(), rule_name, parameters, self.0._header, firstline(input));
             push_indent();
         }
 
