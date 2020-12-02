@@ -1,5 +1,6 @@
 %: init_swirl {}
 %: init_swirl_version_0_1_0 {}
+%: swirlcl (predefined) {::throw_predefined_rule}
 %: print (print) {}
 %: groups_swirl {}
 %: 1wh {' `}
@@ -134,15 +135,27 @@
 
 %: swirl_lib {//usr//local//lib//swirl//}
 
+/ include metatime.swirl here /
+
 / define new syntax feature: work at block /
 
-%: activate_rule(:feature:alnum_s) {::use_syntax_feature(:feature)} 
+%: activate_rule(:feature:alnum_s) {} -> {
+   ::_activate_rule_with_flag(:feature, (syntax))
+}
+%: activate_shallow_rule(:feature:alnum_s) {} -> {
+   ::_activate_rule_with_flag(:feature, )
+}
 
-%: /(deprecated naming)/ use_syntax_feature(:feature_ident:alnum_s) {} -> {
-   %: use_feature_:feature_ident {} '
-  `%: use_feature_:feature_ident {{'::`}anychar'::use_feature_`:feature_ident} '
-  `%: use_feature_:feature_ident {{'::`}:feature_ident'::use_feature_`:feature_ident} '
-  `%: (syntax) {{'::use_feature_`}:feature_ident}
+%: _activate_rule_with_flag(:feature_ident:alnum_s, :flag:rest) {} -> {
+    %: init_use_feature_:feature_ident {}
+    %: init_use_feature_:feature_ident {{'::`}:feature_ident'::init_use_feature_`:feature_ident}
+    %: init_use_feature_:feature_ident {{'::init_not_`}:feature_ident'::anychar::init_use_feature_`:feature_ident}
+    %: init_not_:feature_ident (not) {{'::`}:feature_ident}
+    %: :flag {{'::init_use_feature_`}:feature_ident}
+}
+
+%: init_deferred_meta_instructions {} -> {
+   create namespace init.
 }
 
 %: comment (undefine) {}

@@ -252,12 +252,14 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, wrap_begin: char, wrap_
         }
         // beginning of definition or between lines
         else if whitespace_handling.trim_begin_end() && is_whitespace_end(input, false) {
+            let is_end = is_whitespace_end(input, true) && level == 1;
             // this is not only skipping until line end, but also all the leading whitespace of the next line
             // which suits are quite very well :))
-            if let WhiteSpaceHandling::Substitute(invoc) = whitespace_handling {
-                let is_end = is_whitespace_end(input, true) && level == 1;
-                if input != beginning && !is_end {
+            if input != beginning && !is_end {
+                if let WhiteSpaceHandling::Substitute(invoc) = whitespace_handling {
                     invocation_string.add_invoc(invoc.clone());                    
+                } else {
+                    invocation_string.add_char('\n');                    
                 }
             }
             match_whitespaces(input)?

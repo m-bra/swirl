@@ -109,7 +109,20 @@
 / eval interprets statements in the parameter and returns compiled swirl instructions. /
 / new eval statements can be introduced before and after metatime_eval calls (by adding variants to metatime_eval) /
 
-%: metatime_eval(assert :bool_eval:metatime_bool_expr or throw :message:alnum_s . :code:continue_eval) {} -> {
+%: metatime_eval(clear flag :name:alnum_s'.`::nwh:code:continue_eval) {} -> {
+   %: :name (clear) {}
+}
+
+%: metatime_eval(set flag :name:alnum_s'.`::nwh:code:continue_eval) {} -> {
+   %: :name (clear) {}
+   %: :name {}
+}
+
+%: metatime_eval(if flag :name:alnum_s is set {::nwh:set_code:balanced_curly_inner} else {::nwh:cleared_code:balanced_curly_inner} :continue_code:continue_eval) {} -> {
+   ::unimplemented
+}
+
+%: metatime_eval(assert :bool_eval:metatime_bool_expr or throw :message:alnum_s. :code:continue_eval) {} -> {
    :bool_eval
    %':` {{'::`}metatime_true ''(uid) (9273629276)``} -> {} (catch unknown rule) {
       '::throw_`:message
@@ -119,12 +132,20 @@
    :code
 }
 
-%: metatime_eval(create namespace :name:alnum_s with tag :tag:alnum_s . :code:continue_eval) {} -> {
+%: metatime_eval(create namespace :name:alnum_s. :code:continue_eval) {} -> {
   %':` {{'::`}metatime_eval(
-     assert not namespace :name exists or throw 'namespace_`:name'_already_exists` .
+     assert not namespace :name exists or throw 'namespace_`:name'_already_exists`.
   )}
   %':` :name {}
   %':` :name'__swirl_namespace_convention` {}
+
+  :code 
+}
+
+%: metatime_eval(create namespace :name:alnum_s with tag :tag:alnum_s. :code:continue_eval) {} -> {
+  %: meta! {
+     create namespace :name.
+  }
   %':` :name'__swirl_tag_`:tag {}
 
   :code 
@@ -133,12 +154,12 @@
 / a top-level rule is a rule that is called//initiated at some point in the file.
   after this point, the rule is tried, and if it does not succeed, go to the next character and repeat until EOF. /
 
-%: metatime_eval(toplevel :name:alnum_s (work at :namespace:alnum_s) . :c:continue_eval) {} -> {
+%: metatime_eval(toplevel :name:alnum_s (work at :namespace:alnum_s). :c:continue_eval) {} -> {
    :tmprule:copy(:namespace'_toplevel_`:name)
 
    '%:` {{'::`}metatime_eval(
-      assert namespace :namespace has tag workspace or throw invalid_workspace .
-      assert not rule :tmprule exists or throw internal_error_2463827 .
+      assert namespace :namespace has tag workspace or throw invalid_workspace.
+      assert not rule :tmprule exists or throw internal_error_2463827.
    )}
 
    %: :tmprule {}
@@ -150,9 +171,26 @@
    :c
 }
 
+%: metatime_eval(::1nwh:c:continue_eval) {} -> {:c}
+
 %: assert_empty() {}
 
 %: continue_eval {:r:rest::assert_empty(:r)}
 %: continue_eval {:r:rest} -> {::metatime_eval(:r)}
+
+%: metatime_syntax {
+   %: meta! {:i:balanced_curly_inner}
+} -> {
+   %: '{::metatime_eval(`:i')}`
+}
+
+%: {::activate_rule(metatime_syntax)}
+
+%: meta! {
+   ::init_deferred_meta_instructions
+   assert namespace init exists or throw could_not_create_namespace_init.
+}
+
+%: init_deferred_meta_instructions (undefine) {}
 
 / end of metatime.swirl /

@@ -3,6 +3,8 @@
 #![feature(core_intrinsics)]
 #![feature(try_blocks)]
 
+extern crate meval;
+
 
 use regex::Regex;
 use std::collections::HashMap;

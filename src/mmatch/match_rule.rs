@@ -28,8 +28,18 @@ impl Rule {
         return MatchError::compose(format!("No variant of '{}' matched.", self.name), candidate_errors).tap(Err);
     }
 
-    pub fn match_last<'a>(&self, input: &'a str, param: &str, rules: &Rules) -> Result<(&'a str, String), MatchError> {
-        self.match_last_skip(input, param, rules, 0, vec![])
+    pub fn match_last<'a>(&self, input: &'a str, param: &str, rules: &Rules) -> MatchResult<(&'a str, String)> {
+        if self.is_macro() {
+            if self.name == "swirlcl" {
+                meval::eval_str(param)
+                    .map(|result| (input, result.to_string()))
+                    .map_err(|e| MatchError::new(format!("{}", e)))
+            } else {
+                unreachable!()
+            }
+        } else {
+            self.match_last_skip(input, param, rules, 0, vec![])
+        }
     }
 
     // if one variant in sequence fails, the whole sequence fails.

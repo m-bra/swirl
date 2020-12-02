@@ -30,37 +30,24 @@
 
 %: //usr//local//lib//swirl//metatime.swirl
 
-%: {::metatime_eval(
-   'assert (true and true) or throw 1.`
-)}
-
 %: test_rule {}
 
-%: {::metatime_eval(
-   'assert true or throw 2 .
-   assert not false or throw 3 .
-   assert not (true and (false and false)) or throw 4 .
-   assert rule test_rule exists or throw 5 .
-   create namespace test_namespaceee with tag test_tag  .
-   assert namespace test_namespaceee exists or throw 6 .
-   assert namespace test_namespaceee has tag test_tag or throw 7 .
-   assert not namespace test_namespaceee has tag some_other_tag or throw 8 .`
-)}
+%: meta! {
+   'assert true or throw 2.
+   assert not false or throw 3.
+   assert not (true and (false and false)) or throw 4.
+   assert rule test_rule exists or throw 5.
+   create namespace test_namespaceee with tag test_tag.
+   assert namespace test_namespaceee exists or throw 6.
+   assert namespace test_namespaceee has tag test_tag or throw 7.
+   assert not namespace test_namespaceee has tag some_other_tag or throw 8.`
+}
 
-%: test_syntax {%: hello} -> {%: result {} -> {true}}
+%: test_syntax {%: hello!} -> {%: result {} -> {true}}
 %: {::activate_rule(test_syntax)}
 
 %: result (clear) {}
-%: hello
+%: hello!
 %: {::expect(::result)}
-
-/ to be included in metatime.swirl /
-%: metatime_syntax {
-   %: metatime {:i:balanced_curly_inner}
-} -> {
-   %: {'::metatime_eval(`:i')`}
-}
-
-%: metatime {assert true .}
 
 %: {::line_rest} -> {} %:{::throw_test_line_rest_failed}
