@@ -1,5 +1,5 @@
 %: init_swirl {}
-%: init_swirl_version_0_1_0 {}
+%: init_swirl_0_1 {}
 %: swirlcl (predefined) {::throw_predefined_rule}
 %: print (print) {}
 %: groups_swirl {}
@@ -49,10 +49,11 @@
 %: uint {::09::uint}
 
 %: int {::uint}
-%: int {+::uint}
-%: int {-::uint}
+%: int {+::nwh::uint}
+%: int {-::nwh::uint}
 
-%: double {::int.::uint}
+%: float {::int}
+%: float {::int.::uint}
 
 %: index_number {::uint th} -> {:}
 %: index_number {first} -> {1}
@@ -64,8 +65,9 @@
 
 %: c_quote {"::c_quote_inner"}
 %: c_quote_inner {}
-%: c_quote_inner {\::anychar::c_quote_inner}
 %: c_quote_inner {::not_quote_end::anychar::c_quote_inner}
+%: c_quote_inner {\:c:anychar:r:c_quote_inner} -> {:c'`:r}
+
 %: not_quote_end (not) {"}
 
 
@@ -85,11 +87,21 @@
 %: until_space {}
 %: until_space {::not_whitespace::anychar::until_space}
 
-%: until_str(:s:rest) {}
-%: until_str(:s:rest) {::not(::s)::anychar::until_space}
+%: bake_rule(:name:alnum_s = maybe :r:rest) -> {
+   %: :name {}
+   %: :name :r
+} 
 
-%: line_rest {::until_space(
-)}
+%: bake_rule(until_:name:alnum_s = until :r:rest) -> {
+   %: until_:name (undefine) {}
+   %: until_:name'_not` (undefine) {}
+   %: until_:name {}
+   %: until_:name {{'::until_`}:name'_not`'::anychar::until_`:name}  
+   %: until_:name'_not` (not) {:r}
+}
+
+%: {::bake_rule(until_newline = until '::newline`)}
+%: line_rest {::until_newline}
 
 / a wcomma is a string of the form \s*\,\s+ 
   and is not a usual comma.
@@ -137,6 +149,11 @@
 
 / include metatime.swirl here /
 
+%: init_deferred_meta_instructions {} -> {
+   create namespace swirl;
+   create namespace init.
+}
+
 / define new syntax feature: work at block /
 
 %: activate_rule(:feature:alnum_s) {} -> {
@@ -146,7 +163,7 @@
    ::_activate_rule_with_flag(:feature, )
 }
 
-%: _activate_rule_with_flag(:feature_ident:alnum_s, :flag:rest) {} -> {
+%: _activate_rule_with_flag(:feature_ident:alnum_s,:flag:rest) {} -> {
     %: init_use_feature_:feature_ident {}
     %: init_use_feature_:feature_ident {{'::`}:feature_ident'::init_use_feature_`:feature_ident}
     %: init_use_feature_:feature_ident {{'::init_not_`}:feature_ident'::anychar::init_use_feature_`:feature_ident}
@@ -154,9 +171,14 @@
     %: :flag {{'::init_use_feature_`}:feature_ident}
 }
 
-%: init_deferred_meta_instructions {} -> {
-   create namespace init.
+%: init_feature_redefine {
+   %: (redefine) :rule_name:alnum_s
+} -> {
+   %: :rule_name (undefine) {}
+   %: :rule_name
 }
+
+%: {::activate_rule(init_feature_redefine)}
 
 %: comment (undefine) {}
 %: comment_inner (undefine) {}

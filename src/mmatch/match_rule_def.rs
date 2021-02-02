@@ -70,13 +70,13 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
     let (input, parameter_header_option) = match_invocation_string_def(input, '(', ')', &symbolic_whitespace)?;
     let input = match_whitespaces(input)?;
 
-    let header_start = input;
     let (input, input_header) = match_invocation_string_def(input, '{', '}', &symbolic_whitespace)?;
-    let input_header = input_header.ok_or_else(|| MatchError::expected("Rule header", header_start))?;
+    let input_header_is_implicit = input_header.is_none();
+    let input_header = input_header.unwrap_or(InvocationString::empty());
     let input = match_whitespaces(input)?;
 
     match match_str(input, "->") {
-        Err(_) => {
+        Err(_) if !input_header_is_implicit => {
             let missing_arrow_warning: MatchResult<()> = try {
                 let input = match_whitespaces(input)?;
                 match_str(input, "{")?;
@@ -90,6 +90,9 @@ pub fn match_inner_rule_definition<'a>(input: &'a Input) -> MatchResult<(&'a Inp
                 .verify(&rule_name)
                 .and_then(|rule_variant| Ok((input, (rule_name, rule_variant))))
         },
+        Err(_) => Err(
+            MatchError::new("This is not a rule definition, this is a file invocation.")
+        ),
         Ok(input) => {
             let input = match_whitespaces(input)?;
 

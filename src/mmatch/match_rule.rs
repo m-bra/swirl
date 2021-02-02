@@ -32,7 +32,7 @@ impl Rule {
         if self.is_macro() {
             if self.name == "swirlcl" {
                 meval::eval_str(param)
-                    .map(|result| (input, result.to_string()))
+                    .map(|result| (input, result.to_string().trim_end().to_string()))
                     .map_err(|e| MatchError::new(format!("{}", e)))
             } else {
                 unreachable!()

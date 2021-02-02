@@ -135,7 +135,7 @@ impl RuleVariant {
                         input_before = input_after;
 
                         i += 1;
-                        if i > 10000 {
+                        if i > 1000000 {
                             panic!("Infinite tail recursion...");
                         }
                     }
