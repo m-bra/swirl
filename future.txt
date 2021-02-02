@@ -16,3 +16,19 @@
    * result is added to the backtrace, which will be printed on an uncaught error.
    * add syntax %: (backtrace) (pop) <warning if followed by rule definition> 
              or %: (pop) (backtrace) <warning if followed by rule definition> 
+
+  * rusty c:
+     * c, but variables are const by default
+     * smart pointer
+     * tagged unions
+     * tuples
+     * anonymous structs
+
+
+ * feature to make one swirl procession unit be able to output multiple files
+    - introduce new syntax:
+        %: multiple_file_output_feature {%: send to :name:until_space} -> {::set_current_file_output(:name)}
+    - every procession unit must therefore begin with this syntax
+    - a input file to swirl is called "included file" if it does not begin with this syntax
+
+ * after finding %:, but its neither rule definition nor file include, invoke ::swirl_main_syntax.
