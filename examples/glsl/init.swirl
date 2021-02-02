@@ -1,0 +1,33 @@
+%: /usr/local/lib/swirl/init.swirl.0.1
+
+%: comment {
+    ENSURE_234876234827
+        statically ensure attribute order
+        such that glBindAttribLocation() doesnt have to be used.
+}
+
+%: attribute_number -> {0}
+%: layout_inc -> { '
+	%: -> { '
+	    layout(location=`::attribute_number')
+		%: attribute_number (clear) {}
+		%: attribute_number -> {`::swirlcl(::attribute_number + 1)'}
+	` }
+` }  
+//'
+
+%: glsl_type {vec::09}
+%: glsl_type {ivec::09}
+%: glsl_type {dvec::09}
+%: glsl_type {uvec::09}
+%: glsl_type {fvec::09}
+%: feature_attribute 
+
+%: feature_attribute {
+    in :t:glsl_type :n:alnum_s::nwh;
+} -> {
+	::layout_inc in :t :n;
+}
+// '
+%: {::activate_rule(feature_attribute).}
+.

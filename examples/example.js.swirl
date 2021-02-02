@@ -1,0 +1,112 @@
+// vertexshader.glsl:
+// in vec2 xy;
+// in vec2 uv;
+
+// calling gl.vertexAttribPointer sucks, it couldnt be more redundant, its easy to forget one thing and break everything.
+// even this helper function i wrote requires you to specify the stride and offset, which is as well redundant (->introduces errors)
+// and looks ugly
+
+let sizeof_float = 4;
+let the_vao = ...;
+let the_vbo = ...;
+
+gl.h.vertexAttribute(the_vao, { 
+    attrib_name: "pos", 
+    component_count: 2, 
+    component_type: gl.FLOAT,
+    stride: (2 + 2) * sizeof_float, 
+    offset: 0,
+    source_buffer: the_vbo
+});
+
+gl.h.vertexAttribute(the_vao, { 
+    attrib_name: "uv", 
+    component_count: 2, 
+    component_type: gl.FLOAT,
+    stride: (2 + 2) * sizeof_float, 
+    offset: 2 * sizeof_float,
+    source_buffer: the_vbo
+});
+
+// so quickly write up some macros...
+
+/*
+    %: init.swirl
+
+    %: feature_vertex_layout {
+        !!:vao:alnum_s.vertex_layout = {:result:vertex_layout_buffer_blocks(:vao)::nwh};
+    } -> {
+        :result
+    }
+
+    %: no_tail_opt {}
+    %: vertex_layout_buffer_blocks(:r:rest) {}
+    %: vertex_layout_buffer_blocks(:r:rest) {::nwh::vertex_layout_buffer_block(:r)::vertex_layout_buffer_blocks(:r)::no_tail_opt}
+
+    %: vertex_layout_buffer_block(:vao:alnum_s) {
+        buffer :buffer_name:alnum_s {
+            :inputs:vertex_layout_inputs
+        }
+    } -> {
+        ::vertex_attrib_calls(
+            vao = :vao,
+            vbo = :buffer_name,
+            offset = 0, 
+            stride = ::vertex_layout_inputs_stride(:inputs),
+            inputs = :inputs
+        )
+    }
+
+    %: vertex_layout_inputs {}
+    %: vertex_layout_inputs {::nwh'vec`::09 ::alnum_s::nwh';`::vertex_layout_inputs}
+
+    %: vertex_attrib_calls(
+        vao = ::alnum_s,
+        vbo = ::alnum_s,
+        offset = ::uint,
+        stride = ::uint,
+        inputs = ::nwh
+    ) {}
+
+    %: vertex_attrib_calls(
+        vao = :vao:alnum_s,
+        vbo = :vbo:alnum_s,
+        offset = :offset:uint,
+        stride = :stride:uint,
+        inputs = vec:component_count:09 :input_name:alnum_s::nwh';`::nwh:other_inputs:vertex_layout_inputs
+    ) {} -> {
+        gl.h.vertexAttribute(:vao, {
+            attrib_name: ":input_name",
+            component_count: :component_count,
+            component_type: gl.FLOAT,
+            stride: :stride,
+            offset: :offset,
+            source_buffer: :vbo
+        });
+        ::vertex_attrib_calls(
+            vao = :vao,
+            vbo = :vbo,
+            offset = ::swirlcl(:offset + (:component_count * 4)),
+            stride = :stride,
+            inputs = :other_inputs
+        )
+    }
+
+    %: vertex_layout_inputs_stride() {} -> {0}
+    %: vertex_layout_inputs_stride(vec:n:09 ::alnum_s::nwh';`::nwh:rest:vertex_layout_inputs) {} -> {
+        ::swirlcl(:n * 4 + ::vertex_layout_inputs_stride(:rest))
+    }
+
+    %: {::activate_rule(feature_vertex_layout)}
+*/
+
+// e voila, now we have this much more concise and nice-looking syntax :)
+
+!!the_vao.vertex_layout = {
+    buffer the_vbo {
+        vec2 pos;
+        vec2 uv;
+    }
+}; 
+
+// after piping this file through swirl, the above syntax will simply compile to the function calls in the beginning of this file
