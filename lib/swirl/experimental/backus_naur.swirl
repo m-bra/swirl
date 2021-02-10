@@ -1,0 +1,14 @@
+%: {::init_0_1_swirl}
+%: {::lean_comments_swirl}
+
+/script to convert backus naur terms to swirl rules/
+
+%:: backus_naur_rule {<::backus_naur_rule_name>::nwh'::=`::nwh::backus_naur_term}
+
+%:: backus_naur_rule_name {::backus_naur_rule_name_}
+%:  backus_naur_rule_name {::backus_naur_rule_name_::backus_naur_rule_name}
+%:: backus_naur_rule_name_ {::aZ}
+%:  backus_naur_rule_name_ {::09}
+%:: backus_naur_rule_name_ {-}
+
+%:: backus_naur_term {}

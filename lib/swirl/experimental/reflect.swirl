@@ -1,4 +1,4 @@
-%: (call) {::groups_swirl::lean_comment_swirl}
+%: {::groups_swirl::lean_comment_swirl}
 %: reflect_swirl {}
 
 /warning: i believe ::rule_header to not work with the following header for example: {this { is } a header}/

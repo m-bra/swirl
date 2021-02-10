@@ -1,4 +1,4 @@
-%: (call) {::lean_comment_swirl::groups_swirl::reflect_swirl}
+%: {::lean_comment_swirl::groups_swirl::reflect_swirl}
 
 /for all uses of ::nameless_rule below, flags aren't really supported. so maybe replace them with a checked ::unflagged_nameless_rule version./
 
@@ -23,13 +23,13 @@
     }
 
     %: unfold {-combination((:r:rule_combination)) -on(:prefix:c_ident) .} -> {
-        %: (call) {'{::unfold}'} -combination(:r) -on(:prefix).
+        %: {'{::unfold}'} -combination(:r) -on(:prefix).
     }
 
     %: unfold {-combination((:r:rule_combination)?) -on(:prefix:c_ident) .} -> {
         %-: :prefix {}
         %-: :prefix {{'::'}:prefix{''}_maybe}
-        %: (call) {{'::unfold'}} -combination(:r) -on(:prefix{''}_maybe).
+        %: {{'::unfold'}} -combination(:r) -on(:prefix{''}_maybe).
     }
 
     %: unfold_arg_postfix {::nwh} -> {_t}
@@ -47,8 +47,8 @@
         -combination(:head:rule_combination_simple :rest:seq_chain_combination)
         -on(:prefix:c_ident) .
     } -> {
-        %: (call) {{'::unfold_seq_subrules'}} -combination(:head :rest) -on(:prefix{''}_s).
-        %: (call) {{'::unfold_seq_stemrule'}} -combination(:head :rest) -on(:prefix).
+        %: {{'::unfold_seq_subrules'}} -combination(:head :rest) -on(:prefix{''}_s).
+        %: {{'::unfold_seq_stemrule'}} -combination(:head :rest) -on(:prefix).
     }
 
     %: unfold_seq_steminvocs (
@@ -80,15 +80,15 @@
         -combination(:head:rule_combination_simple)
         -on(:prefix:c_ident) .
     } -> {
-        %: (call) {{'::unfold'}} -combination(:head) -on(:prefix).
+        %: {{'::unfold'}} -combination(:head) -on(:prefix).
     }
 
     %: unfold_seq_subrules {
         -combination(:head:rule_combination_simple :rest:seq_chain_combination)
         -on(:prefix:c_ident) .
     } -> {
-        %: (call) {{'::unfold'}} -combination(:head) -on(:prefix).
-        %: (call) {{'::unfold_seq_subrules'}} -combination(:rest) -on(:prefix{''}s).
+        %: {{'::unfold'}} -combination(:head) -on(:prefix).
+        %: {{'::unfold_seq_subrules'}} -combination(:rest) -on(:prefix{''}s).
     }
 
     %: unfold {
@@ -96,8 +96,8 @@
         -on(:prefix:c_ident)
         :postfix:unfold_arg_postfix .
     } -> {
-        %: (call) {'{::unfold}'} -combination(:tail) -on(:prefix{''}:postfix{''}t).
-        %: (call) {'{::unfold}'} -combination(:head) -on(:prefix{''}:postfix).
+        %: {'{::unfold}'} -combination(:tail) -on(:prefix{''}:postfix{''}t).
+        %: {'{::unfold}'} -combination(:head) -on(:prefix{''}:postfix).
         %-: :prefix {{'::'}:prefix{''}:postfix{''}t}
         %-: :prefix {{'::'}:prefix{''}:postfix}
     }
@@ -107,8 +107,8 @@
         -on(:prefix:c_ident)
         :postfix:unfold_arg_postfix
     } -> {
-        %: (call) {'{::unfold}'} -combination(:rest) -on(:prefix) -postfix(:postfix{''}t).
-        %: (call) {'{::unfold}'} -combination(:head) -on(:prefix{''}:postfix).
+        %: {'{::unfold}'} -combination(:rest) -on(:prefix) -postfix(:postfix{''}t).
+        %: {'{::unfold}'} -combination(:head) -on(:prefix{''}:postfix).
         %-: :prefix {{'::'}:prefix{''}:postfix}
     }
 /}/
@@ -118,7 +118,7 @@
 %: syntax_structured_rule {
     %:! {'structured:'} :ruleName:c_ident = :root:rule_combination
 } -> {
-    %: (call) {'{::unfold}'} 
+    %: {'{::unfold}'} 
         -combination(:root)
         -on(:ruleName).
 }
@@ -129,7 +129,7 @@
 %: apply_structured_rules_1 {::anychar}
 %: apply_structured_rules_1 {::syntax_structured_rule}
 
-%: (call) {--::syntax_structured_rule}
+%: {--::syntax_structured_rule}
 
 --%:! structured: c_quote = {a}{b}{c} or ({c} -> {d})?({e})
 

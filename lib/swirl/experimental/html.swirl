@@ -1,0 +1,29 @@
+
+%: {::init_swirl_0_1}
+%: {::lean_comments_swirl}
+
+/ reference: https://www.w3.org//TR//html52//syntax.html#doctype                             /
+/ a lot of the restrictions specified in the official specification are not considered here; /
+/ thus, this syntax is a superset of html.                                                   /
+/ e.g. the following would be accepted as a ::html_tag: <//tag attrib="1"//>  (where double-slash represents single-slash) /
+
+/
+
+	%: html_tag_name {::alnum_s}
+	%: html_content {::unimplemented //(there are different content models)// }
+	
+	%: maybe_slash {}
+	%: maybe_slash {//}
+	
+	%: html_tag {<::maybe_slash::html_tag_name ::html_attribs::nwh::maybe_slash>}
+	%: html_tag {<::maybe_slash::html_tag_name::nwh::maybe_slash>}
+	%: html_void_element {::html_start_tag //without end tag//}
+
+/
+
+%: html_attrib_value {::html_attrib_value_double_quoted}
+
+%: html_attrib_value_double_quoted {"::html_attrib_value_double_quoted_inner"}
+%: html_attrib_value_double_quoted_inner {}
+%: html_attrib_value_double_quoted_inner {::not_quote::anychar::html_attrib_value_double_quoted_inner}
+%: not_quote (not) {"}

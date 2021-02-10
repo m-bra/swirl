@@ -1,4 +1,0 @@
-%: init.swirl
-%: lean_comment.swirl
-%: reflect.swirl
-%: structured.swirl
