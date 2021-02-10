@@ -7,6 +7,18 @@ pub fn firstline<'a>(string: &str) -> &str {
     _firstline(string.trim())
 }
 
+pub fn input_view(input: &str) -> &str {
+    let mut input_view = input;
+    while input_view.chars().next().map(|c| c == '\n').unwrap_or(false) {
+        input_view = &input_view[1..];
+    }
+    input_view = firstline(input);
+    if input_view.len() > 32 {
+        input_view = &input_view[..20];
+    }
+    input_view
+}
+
 mod dump_file;
 pub use dump_file::*;
 

@@ -149,6 +149,10 @@ impl<T> SetBacktrace for MatchResult<T> {
     }
 }
 
+pub fn trace<T>(msg: String, f: impl FnOnce() -> MatchResult<T>) -> MatchResult<T> {
+    f().trace(msg)
+}
+
 // return until end of line (in simple quotes), or (if input is at end of line), return "end of line" without quotes
 pub fn error_region(input: &str) -> String {
     let line = input.lines().next().unwrap_or("");

@@ -1,1 +1,3 @@
-%: (call) {::lean_comment}
+%: -> {
+    %: ::cwd//lean_comment.swirl' `
+}

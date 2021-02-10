@@ -28,6 +28,7 @@ impl Rule {
         return MatchError::compose(format!("No variant of '{}' matched.", self.name), candidate_errors).tap(Err);
     }
 
+    /// try applying rule variants from the bottom up
     pub fn match_last<'a>(&self, input: &'a str, param: &str, rules: &Rules) -> MatchResult<(&'a str, String)> {
         if self.is_macro() {
             if self.name == "swirlcl" {
@@ -39,6 +40,17 @@ impl Rule {
             }
         } else {
             self.match_last_skip(input, param, rules, 0, vec![])
+        }
+    }
+
+    pub fn match_all<'a>(&self, input: &'a str, param: &str, rules: &Rules) -> MatchResult<String> {
+        let (input_after, result) = self.match_last(input, param, rules)?;
+        if input_after == "" {
+            Ok(result)
+        } else {
+            MatchError::new(format!("::{}({}) did not consume all of its input, '{}' was left.", self.name, param, input_after))
+                .tap(Err)
+                .trace(self.backtraceline(input))
         }
     }
 

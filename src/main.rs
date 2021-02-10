@@ -28,6 +28,14 @@ pub const ESCAPE_BRACE_CLOSE: [&str; 2] = ["`", "`}"];
 pub const RULE_INVOCATION_CHAR: char = ':';
 pub const RULE_DEFINITION_KEY: &str = "%:";
 
+pub const SWIRL_WHITESPACE_RULES: [&str; 4] = ["whitespace", "whitespaces", "nwh", "1nwh"];
+pub const SWIRL_WHITESPACE_HANDLER_PARAM_HEADER: &str = "swirl_whitespace_handler_header";
+pub const SWIRL_WHITESPACE_HANDLER_PARAM_INPUT: &str = "swirl_whitespace_handler_body";
+pub const SWIRL_WHITESPACE_HANDLER_HEADER: &str = "swirl_whitespace_handler_header";
+pub const SWIRL_WHITESPACE_HANDLER_BODY: &str = "swirl_whitespace_handler_body";
+pub const SWIRL_WHITESPACE_HANDLER_CATCH_BODY: &str = "swirl_whitespace_handler_body";
+
+
 static mut INDENT: usize = 0;
 
 fn push_indent() {unsafe {INDENT += 2;}}
@@ -53,10 +61,10 @@ pub fn find_statement(input: &Input) -> Option<(&str, &Input)> {
 
 use std::fs::File;
 
-pub fn match_statement(input: &Input) -> MatchResult<(&Input, (String, Option<RuleVariant>))> {
-    match match_rule_definition(input) {
+pub fn match_statement<'a>(input: &'a Input, rules: &Rules) -> MatchResult<(&'a Input, (String, Option<RuleVariant>))> {
+    match match_rule_definition(input, rules) {
         Ok((input, (name, variant))) => Ok((input, (name, Some(variant)))),
-        Err(def_err) => match match_file_invocation(input) {
+        Err(def_err) => match match_file_invocation(input, rules) {
             Ok((input, name)) => match File::open(name) {
                 Ok(_) => Ok((input, (name.to_string(), None))),
                 Err(file_err) => {
@@ -120,7 +128,7 @@ pub fn process(input: &str, rules: &mut Rules, mut appleft: MaybeInf<u32>, remov
             break;
         }
 
-        let (statement_end, (name, maybe_variant)) = match_statement(statement_begin)?;
+        let (statement_end, (name, maybe_variant)) = match_statement(statement_begin, rules)?;
         // all text until the current rule definition remains untouched (because it is between the beginning/a rule definition and a rule definition)
         // so just push it to the result string
         receive_output(skipped_text)?;

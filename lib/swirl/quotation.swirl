@@ -1,7 +1,20 @@
-%: quotation { { ' ::quotation_inner_s ' } }
-%: quotation_inner_s {}
-%: quotation_inner_s {::quotation_inner::quotation_inner_s}
-%: quotation_inner {::quotation}
-%: quotation_inner {::not_quotation_begin::not_quotation_end::anychar}
-%: not_quotation_end (not) { ' {'}'} }
-%: not_quotation_begin (not) { {'{'} ' }
+%: {::init_swirl_0_1}
+%: -> {'
+    %::swirl_quote {'{`{''`}::swirl_quote_inner_s{'``}'}`}
+    %: swirl_quote {{''`}::swirl_quote_inner_s{'``}}
+
+    %::swirl_quote_value {'{`{''`}:i:swirl_quote_inner_s{'``}'}`} -> {:i}
+    %: swirl_quote_value {{''`}:i:swirl_quote_inner_s{'``}} -> {:i}
+
+    %::swirl_quote_inner_s {}
+    %: swirl_quote_inner_s {::swirl_quote_inner::swirl_quote_inner_s}
+    %::swirl_quote_inner {::swirl_quote}
+    %: swirl_quote_inner {::not_quotation_begin::not_quotation_end::anychar}
+    %:: not_quotation_end (not) {::swirl_quote_end}
+    %:: not_quotation_begin (not) {::swirl_quote_begin}
+
+    %::swirl_quote_begin {'{`{''`}}
+    %: swirl_quote_begin {{''`}}
+    %::swirl_quote_end {{'``}'}`}
+    %: swirl_quote_end {{'``}}
+`}

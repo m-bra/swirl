@@ -25,4 +25,13 @@ impl Rule {
     pub fn is_macro(&self) -> bool {
         self._is_macro
     }
+
+    pub fn backtraceline(&self, input: &str) -> String {
+        let input_view = input_view(input);
+        if self.name == "" {
+            format!("::() on '{}'", input_view)
+        } else {
+            format!("::{} on '{}'", &self.name, input_view)
+        }
+    }
 }

@@ -49,7 +49,7 @@ impl InvocationString {
     }
 
     /// iterate text and invocation segments
-    /// might include empty items ("", &[])
+    /// might include empty items ("", _) or (_, &[])
     /// while returned references live, do not call pop_end_invoc() or push_invoc() 
     pub unsafe fn iter(&self) -> impl Iterator<Item=(&str, &[Invocation])> {
         use std::rc::Rc;
@@ -113,7 +113,16 @@ impl InvocationStringBuilder {
         }
     }
 
-    
+    pub fn add_invoc_str(&mut self, invoc_str: &InvocationString) {
+        unsafe {
+            for (stri, invocs) in invoc_str.iter() {
+                self.add_str(stri);
+                for invoc in invocs {
+                    self.add_invoc(invoc.clone());
+                }
+            }
+        }
+    }
 
     pub fn seal(self) -> InvocationString {self.0}
 }

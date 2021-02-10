@@ -1,0 +1,49 @@
+%: {::init_swirl_0_1}
+%: remove_first_line() -> {}
+%: remove_first_line(::anychar:r:rest) -> {::remove_first_line(:r)}
+%: remove_first_line(::newline:r:rest) -> {:r}
+
+%: swirl_whitespace_handler_header('begin`) {::rest} -> {}
+%: swirl_whitespace_handler_header('end`) {::rest} -> {}
+%: swirl_whitespace_handler_header('between lines`) {::rest} -> {}
+%: swirl_whitespace_handler_header('within line`) {::rest} -> {'::1nwh`}
+
+/ trim beginning and end but keep indentation and empty lines /
+%: swirl_whitespace_handler_body('begin`) {:r:rest} -> {{''`}::remove_first_line(:r){'``}}
+%: swirl_whitespace_handler_body('end`) {::rest} -> {}
+%: swirl_whitespace_handler_body('between lines`) {:r:rest} -> {{''`}:r{'``}}
+%: swirl_whitespace_handler_body('within line`) {:r:rest} -> {{''`}:r{'``}}
+
+%: current_whitespace_handler -> {'trim ends, replace in header with ::1nwh`}
+
+%: define_whitespace_handler('trim ends, replace in header with `:r:rest) -> {'
+    %: swirl_whitespace_handler_header('begin`) {::rest} -> {}
+    %: swirl_whitespace_handler_header('end`) {::rest} -> {}
+    %: swirl_whitespace_handler_header('between lines`) {::rest} -> {}
+    %: swirl_whitespace_handler_header('within line`) {::rest} -> {{''`}`:r'{'``}}
+
+    / trim beginning and end but keep indentation and empty lines /
+    %: swirl_whitespace_handler_body('begin`) {:r:rest} -> {{''`}::remove_first_line(:r){'``}}
+    %: swirl_whitespace_handler_body('end`) {::rest} -> {}
+    %: swirl_whitespace_handler_body('between lines`) {:r:rest} -> {{''`}:r{'``}}
+    %: swirl_whitespace_handler_body('within line`) {:r:rest} -> {{''`}:r{'``}}
+
+    %: current_whitespace_handler -> {`{''`}'trim ends, replace in header with `:r{'``}'}
+`}
+
+%: define_whitespace_handler('remove all whitespace`) -> {
+    %: swirl_whitespace_handler_header('begin`) {::rest} -> {}
+    %: swirl_whitespace_handler_header('end`) {::rest} -> {}
+    %: swirl_whitespace_handler_header('between lines`) {::rest} -> {}
+    %: swirl_whitespace_handler_header('within line`) {::rest} -> {}
+
+    / trim beginning and end but keep indentation and empty lines /
+    %: swirl_whitespace_handler_body('begin`) {::rest} -> {}
+    %: swirl_whitespace_handler_body('end`) {::rest} -> {}
+    %: swirl_whitespace_handler_body('between lines`) {::rest} -> {}
+    %: swirl_whitespace_handler_body('within line`) {::rest} -> {}
+
+    %: current_whitespace_handler -> {{''remove all whitespace``}}
+}
+
+

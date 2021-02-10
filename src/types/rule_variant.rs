@@ -54,8 +54,11 @@ impl UntrustedRuleVariant {
     }
 
     pub fn verify(self, rule_name: &str) -> MatchResult<RuleVariant> {
-        if self._flags.contains("debug") {
-            MatchError::rule_variant_verification_failure(rule_name, &self, "Error: Flag 'debug' is deprecated.".to_string())
+        if self._flags.contains("once") && !rule_name.is_empty() {
+            MatchError::rule_variant_verification_failure(rule_name, &self, "Can only use flag (once) on unnamed rules".to_string())
+                .tap(Err)
+        } else if self._flags.contains("debug") {
+            MatchError::rule_variant_verification_failure(rule_name, &self, "Flag 'debug' is deprecated.".to_string())
                 .tap(Err)
         } else {
             self
@@ -118,7 +121,7 @@ impl RuleVariant {
         }
     }
 
-    pub fn on_success(&self, rule_name: &str, input: &str) {
+    pub fn on_success(&self, _rule_name: &str, _input: &str) {
         if is_verbose() || self.0._flags.contains("print") || self.0._flags.contains("print_success") {
             pop_indent();
             println!("{} >>> Success!", get_indent());
@@ -130,7 +133,7 @@ impl RuleVariant {
     }
 
 
-    pub fn on_failure(&self, rule_name: &str, input: &str) {
+    pub fn on_failure(&self, _rule_name: &str, _input: &str) {
         if self.0._flags.contains("print") || self.0._flags.contains("print_failure") {
             pop_indent();
             println!("{} >>> Failure!", get_indent());

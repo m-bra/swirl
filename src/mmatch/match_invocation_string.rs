@@ -1,4 +1,5 @@
 use crate::*;
+use std::cell::Cell;
 
 #[derive(PartialEq, Eq)]
 pub struct InvocStrResult {
@@ -172,32 +173,9 @@ fn test_match_invocation_string() {
     })*/
 }
 
-/// how to handle whitespace in invocation strings
-pub enum WhiteSpaceHandling {
-    Remove,
-    // trims line beginnings (to remove indentation) and the beginning and ending of the whole invocation string
-    TrimLineBegin,
-    /// trims like TrimLineBegin, 
-    /// and all other whitespaces (namely, whitespaces between non-whitespace characters)
-    /// are substituted with the given invocation
-    Substitute(Invocation),
-    LeaveUnchanged,
-}
-
-impl WhiteSpaceHandling {
-    pub fn trim_begin_end(&self) -> bool {
-        match self {
-            WhiteSpaceHandling::TrimLineBegin => true,
-            WhiteSpaceHandling::Substitute(_) => true,
-            // for WhiteSpaceHandling::Remove, the end and the beginning will already be "trimmed"
-            _ => false
-        }
-    }
-}
-
 /// matches a rule header definition (including {}) or a rule body definition,
 /// if input does not start with '{', no error is returned but just None.
-pub fn match_invocation_string_def<'a>(input: &'a Input, wrap_begin: char, wrap_end: char, whitespace_handling: &WhiteSpaceHandling)
+pub fn match_invocation_string_def<'a>(input: &'a Input, rules: &Rules, wrap_begin: char, wrap_end: char, whitespace_handling_rule: &str)
         -> MatchResult<(&'a Input, Option<InvocationString>)> {
     let mut invocation_string = InvocationString::new();
 
@@ -206,7 +184,7 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, wrap_begin: char, wrap_
         Err(_) => return Ok((input, None)),
     };
 
-    let mut level = 1;
+    let level = Cell::new(1);
     let beginning = input;
 
     // whether the incoming text is just whitespace followed by either wrap_end or newline
@@ -228,79 +206,74 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, wrap_begin: char, wrap_
         }
     };
 
-              //}        // }           // * }
-
-    //N        x         true           
-
-    // N
+    let is_whitespace_line_end = |input| is_whitespace_end(input, false);
+    let is_whitespace_all_end = |input| is_whitespace_end(input, true) && level.get() == 1;
     
-    // * N
-    
-
-    //breakpoint();
-
-    loop { input =
-        if let Ok((input, invo)) = match_invocation(input) {
-            invocation_string.add_invoc(invo);
-            input
-        }
-        // end of definition 
-        else if whitespace_handling.trim_begin_end() && level == 1 && is_whitespace_end(input, true) {
-            input = match_whitespaces(input)?;
-            level -= 1;
-            break;
-        }
-        // beginning of definition or between lines
-        else if whitespace_handling.trim_begin_end() && is_whitespace_end(input, false) {
-            let is_end = is_whitespace_end(input, true) && level == 1;
-            // this is not only skipping until line end, but also all the leading whitespace of the next line
-            // which suits are quite very well :))
-            if input != beginning && !is_end {
-                if let WhiteSpaceHandling::Substitute(invoc) = whitespace_handling {
-                    invocation_string.add_invoc(invoc.clone());                    
+    loop { input = {
+            let maybe_escaped = {
+                // higher escape brace indices take precedence
+                let (input_after, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[1], ESCAPE_BRACE_CLOSE[1])?;
+                if is_escaped {
+                    Some((s, input_after))
                 } else {
-                    invocation_string.add_char('\n');                    
-                }
-            }
-            match_whitespaces(input)?
-        } else {
-            // higher escape brace indices take precedence
-            let input_start = input;
-            let (input, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[1], ESCAPE_BRACE_CLOSE[1])?;
-            let (input, s, is_escaped) = if is_escaped {
-                (input, s, true)
-            } else {
-                match_escapable_char(input_start, ESCAPE_BRACE_OPEN[0], ESCAPE_BRACE_CLOSE[0])?
-            };
-            let mut input = input;
-
-            if !is_escaped {
-                if s == format!("{}", wrap_begin) {
-                    level += 1;
-                } else if s == format!("{}", wrap_end) {
-                    level -= 1;
-                    if level == 0 {
-                        break;
+                    // try again with other escape braces
+                    let (input_after, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[0], ESCAPE_BRACE_CLOSE[0])?;
+                    if is_escaped {
+                        Some((s, input_after))
+                    } else {
+                        None
                     }
                 }
-            }
-
-            if s.chars().all(char::is_whitespace) && !is_escaped {
-                match whitespace_handling {
-                    WhiteSpaceHandling::LeaveUnchanged => invocation_string.add_str(s),
-                    WhiteSpaceHandling::Remove => (),
-                    WhiteSpaceHandling::Substitute(invoc) => {
-                        invocation_string.add_invoc(invoc.clone());
-                        // also skip the next whitespace characters
-                        input = match_whitespaces(input)?;
-                    },
-                    WhiteSpaceHandling::TrimLineBegin => invocation_string.add_str(s) // trimming already occurs above
-                }
-            } else {
-                invocation_string.add_str(s);
-            }
+            };
             
-            input
+            if let Some((escaped_txt, input)) = maybe_escaped {
+                invocation_string.add_str(escaped_txt);
+                input
+            } else {
+                if let Ok((input, invo)) = match_invocation(input, rules) {
+                    invocation_string.add_invoc(invo);
+                    input
+                } else if input.starts_with(wrap_begin) {
+                    level.set(level.get() + 1);
+                    invocation_string.add_char(wrap_begin);
+                    &input[1..]
+                } else if input.starts_with(wrap_end) {
+                    level.set(level.get() - 1);
+                    if level.get() == 0 {
+                        break;
+                    }
+                    invocation_string.add_char(wrap_end);
+                    &input[1..]
+                } else if input.starts_with(char::is_whitespace) {
+                    let whitespace_handling_rule: &Rule = match rules.get(whitespace_handling_rule) {
+                        Some(rule) => rule,
+                        None => return MatchError::new(format!("{}{}", "white spacer handler not defined at ", firstline(beginning))).tap(Err),
+                    };
+
+                    let (input_after, wh_count) = count_whitespaces(input)?;
+                    let param = if input == beginning {
+                        "begin"
+                    } else if is_whitespace_all_end(input) {
+                        "end"
+                    } else if is_whitespace_line_end(input) {
+                        "between lines"
+                    } else {
+                        "within line"
+                    };
+                    let result = whitespace_handling_rule.match_all(&input[..wh_count], param, rules)?;
+                    let result = format!("({})", &result);
+                    let (result_rest, result) = match_invocation_string_def(&result, rules, '(', ')', SWIRL_WHITESPACE_HANDLER_BODY)?;
+                    let result = result.unwrap();
+                    assert_eq!(result_rest, "");
+                    invocation_string.add_invoc_str(&result);
+                    input_after
+                } else if input.len() > 0 {
+                    invocation_string.add_char(input.chars().next().unwrap());
+                    &input[1..]
+                } else {
+                    return MatchError::new("Unexpected end of file").tap(Err);
+                }
+            }
         }
     };
     let input = match_char(input, wrap_end).expect("Internal error: Next char after loop in match_invocation_string_def() has to be wrap_end!");

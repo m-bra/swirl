@@ -1,18 +1,35 @@
-%: lib/swirl/init.swirl
 
-%: eq(::c_ident|::c_ident) {} -> {false}
-%: eq(:a:c_ident|:a) {} -> {true}
+%: cwd -> {lib//swirl//}
+%: -> {'
+   %: `::cwd'//init.swirl.0.1
+`}
 
-%: expect(::rest) {} -> {::throw}
-%: expect('true`) {} -> {}
+%::new_rule {}
 
-%: negate('false`) {} -> {true}
-%: negate('true`) {} -> {false}
+%: -> {'
+   %: `::cwd'//lean_comments.swirl
+   %: `::cwd'//metatime.swirl
+`}
+
+%: {::bake_rule(until_bar = until |)}
+
+%: eq(::until_bar|::rest) {} -> {false}
+%: eq(:a:until_bar|:a) {} -> {true}
+
+%: expect(false:r:rest) {} -> {
+   %: -> {
+      %: {{'::throw_`}:r}
+   }
+}
+%: expect(true::rest) {} -> {}
+
+%: negate('false`) -> {true}
+%: negate('true`) -> {false}
 
 %: swirl_inserted_whitespace (undefine) {}
 %: swirl_inserted_whitespace {}
 
-%: {} -> {'
+%: -> {'
 `  ::expect(true)'
 `  ::expect(::negate(false))'
 `  ::expect(::negate(::eq(hello|bye)))'
@@ -28,20 +45,32 @@
    ::expect(::eq(:x|1_1_1))
 }
 
-%: //usr//local//lib//swirl//metatime.swirl
-
 %: test_rule {}
 
-%: meta! {
-   'assert true or throw 2.
+%: meta! {'
+   assert true or throw 2.
    assert not false or throw 3.
    assert not (true and (false and false)) or throw 4.
    assert rule test_rule exists or throw 5.
    create namespace test_namespaceee with tag test_tag.
    assert namespace test_namespaceee exists or throw 6.
    assert namespace test_namespaceee has tag test_tag or throw 7.
-   assert not namespace test_namespaceee has tag some_other_tag or throw 8.`
-}
+   assert not namespace test_namespaceee has tag some_other_tag or throw 8.
+
+   raw '%: test_rule_2 {}`.
+   assert rule test_rule_2 exists or throw 9.
+
+   string test = "hello".
+   string test = "bye".
+   raw '%: {::expect(::eq(::test|bye)_111)}`.
+   append " bye" to string test.
+`} %: meta! {'
+   raw '%: {::expect(::eq(::test|bye bye))}`.
+`} %: meta! {'
+   string other = string test.
+`} %: meta! {'
+   raw '%: {::expect(::eq(::other|::test)_not_equal_7638)}`.
+`}
 
 %: test_syntax {%: hello!} -> {%: result {} -> {true}}
 %: {::activate_rule(test_syntax)}
@@ -51,3 +80,5 @@
 %: {::expect(::result)}
 
 %: {::line_rest} -> {} %:{::throw_test_line_rest_failed}
+
+

@@ -1,10 +1,12 @@
 %: {::swirl_version_0_2_0}
 
-%: //usr//local//lib//swirl//init.swirl.0.1
-%: //usr//local//lib//swirl//lean_comment.swirl
-%: //usr//local//lib//swirl//experimental//c_syntax.swirl
+%: {::init_swirl_0_1}
+%: {::lean_comments_swirl}
+%: {::metatime_swirl} -> {} (catch unknown rule) {'
 
-/ metatime.swirl /
+%: metatime_swirl {}
+
+%: deferred_meta_instructions -> {::init_deferred_meta_instructions}
 
 %: metatime_set_flag {:name:alnum_s} -> {
    %: :name (clear) {}
@@ -53,6 +55,63 @@
       %'':`` metatime_true (clear) {}
       %'':`` { (uid) (2346283497)} -> {}
    } '(uid) (2346283497)`
+}
+
+
+/ eval interprets statements in the parameter and returns compiled swirl instructions. /
+/ new eval statements can be introduced before and after metatime_eval calls (by adding variants to metatime_eval) /
+
+%: mangled_ident {::unimplemented}
+%: unmangled_ident {::unimplemented}
+
+%: -> {'
+   %: (undefine) deferred_meta_instructions {}
+   %: deferred_meta_instructions -> {
+      `::deferred_meta_instructions'
+      create namespace metatime.
+   }
+`}
+
+%: metatime_eval(raw :code:swirl_quote_value.:rest:continue_eval) -> {
+   :code
+   :rest
+}
+
+%: metatime_eval(append :value:c_quote_value to set :name:alnum_s.:rest:continue_eval) -> {
+   %: :name {{''`}:value{'``}}
+   :rest
+}
+
+%: metatime_eval(delete :name:alnum_s.:rest:continue_eval) -> {
+   %: (undefine) :name {}
+   :rest
+}
+
+%: metatime_eval(append :value:c_quote_value to string :name:alnum_s.:rest:continue_eval) -> {
+   %: -> {
+      %: (undefine) :name {}
+      %: :name -> {{'::`}:name{''`}:value{'``}}
+   }
+   :rest
+}
+
+%: metatime_eval(string :name:alnum_s = string :other:alnum_s.:rest:continue_eval) -> {
+   %: (undefine) :name {}
+   %: -> {
+      %: :name -> {{'{''`}`}{'::`}:other{'{'``}`}}
+   }
+   :rest
+}
+
+%: metatime_eval(string :name:alnum_s = :value:c_quote_value.:rest:continue_eval) -> {
+   %: (undefine) :name {}
+   %: :name -> {{''`}:value{'``}}
+   :rest
+}
+
+%: metatime_eval(clear flag :name:alnum_s'.`::nwh:code:continue_eval) {} -> {
+   %: :name (clear) {}
+   :code
 }
 
 / boolean operations can only be evaluated inside parentheses, because they indicate to the parser that operations may come /
@@ -106,23 +165,22 @@
    %: {{'::`}metatime_bool_expr} (namespace :name exists and rule :name'__swirl_tag_`:tag exists)
 }
 
-/ eval interprets statements in the parameter and returns compiled swirl instructions. /
-/ new eval statements can be introduced before and after metatime_eval calls (by adding variants to metatime_eval) /
-
 %: metatime_eval(clear flag :name:alnum_s'.`::nwh:code:continue_eval) {} -> {
    %: :name (clear) {}
+   :code
 }
 
 %: metatime_eval(set flag :name:alnum_s'.`::nwh:code:continue_eval) {} -> {
    %: :name (clear) {}
    %: :name {}
+   :code
 }
 
 %: metatime_eval(if flag :name:alnum_s is set {::nwh:set_code:balanced_curly_inner} else {::nwh:cleared_code:balanced_curly_inner} :continue_code:continue_eval) {} -> {
    ::unimplemented
 }
 
-%: metatime_eval(assert :bool_eval:metatime_bool_expr or throw :message:alnum_s. :code:continue_eval) {} -> {
+%: metatime_eval(assert :bool_eval:metatime_bool_expr or throw :message:alnum_s.:code:continue_eval) {} -> {
    :bool_eval
    %':` {{'::`}metatime_true ''(uid) (9273629276)``} -> {} (catch unknown rule) {
       '::throw_`:message
@@ -132,7 +190,7 @@
    :code
 }
 
-%: metatime_eval(create namespace :name:alnum_s. :code:continue_eval) {} -> {
+%: metatime_eval(create namespace :name:alnum_s.:code:continue_eval) {} -> {
   %':` {{'::`}metatime_eval(
      assert not namespace :name exists or throw 'namespace_`:name'_already_exists`.
   )}
@@ -142,7 +200,7 @@
   :code 
 }
 
-%: metatime_eval(create namespace :name:alnum_s with tag :tag:alnum_s. :code:continue_eval) {} -> {
+%: metatime_eval(create namespace :name:alnum_s with tag :tag:alnum_s.:code:continue_eval) {} -> {
   %: meta! {
      create namespace :name.
   }
@@ -154,7 +212,7 @@
 / a top-level rule is a rule that is called//initiated at some point in the file.
   after this point, the rule is tried, and if it does not succeed, go to the next character and repeat until EOF. /
 
-%: metatime_eval(toplevel :name:alnum_s (work at :namespace:alnum_s). :c:continue_eval) {} -> {
+%: metatime_eval(toplevel :name:alnum_s (work at :namespace:alnum_s).:c:continue_eval) {} -> {
    :tmprule:copy(:namespace'_toplevel_`:name)
 
    '%:` {{'::`}metatime_eval(
@@ -187,10 +245,11 @@
 %: {::activate_rule(metatime_syntax)}
 
 %: meta! {
-   ::init_deferred_meta_instructions
+   ::deferred_meta_instructions
    assert namespace init exists or throw could_not_create_namespace_init.
 }
 
 %: init_deferred_meta_instructions (undefine) {}
+%: deferred_meta_instructions (undefine) {} /reference to ::init_deferred_meta_instructions is now invalid/
 
-/ end of metatime.swirl /
+`}
