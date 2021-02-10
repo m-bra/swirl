@@ -12,7 +12,7 @@ impl Rule {
     pub fn new(name: String) -> Rule {
         Rule {
             variants: Vec::new(),
-            _is_macro: name == "swirlcl",
+            _is_macro: Rule::is_macro_(&name),
             name: name,
         }
     }

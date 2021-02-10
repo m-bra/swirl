@@ -28,6 +28,22 @@ impl Rule {
         return MatchError::compose(format!("No variant of '{}' matched.", self.name), candidate_errors).tap(Err);
     }
 
+    pub fn is_macro_(name: &str) -> bool {
+        [
+            "swirlcl",
+            "swirl_ident",
+            "swirl_rule_invoc",
+            "swirl_var",
+            "swirl_quote",
+            "swirl_quote_value",
+            "swirl_header",
+            "swirl_body",
+            "swirl_inner_rule_def",
+            "swirl_rule_def",
+            "swirl_file_invoc",
+        ].contains(&name)
+    }
+
     /// try applying rule variants from the bottom up
     pub fn match_last<'a>(&self, input: &'a str, param: &str, rules: &Rules) -> MatchResult<(&'a str, String)> {
         if self.is_macro() {
@@ -35,7 +51,57 @@ impl Rule {
                 meval::eval_str(param)
                     .map(|result| (input, result.to_string().trim_end().to_string()))
                     .map_err(|e| MatchError::new(format!("{}", e)))
-            } else {
+            }  else if self.name == "swirl_rule_invoc" {
+                let (after_input, _) = match_rule_invoc(input, rules)?;
+                let len = input.len() - after_input.len();
+                Ok((after_input, input[..len].to_string()))
+            } else if self.name == "swirl_var" {
+                let (after_input, _) = match_var(input)?;
+                let len = input.len() - after_input.len();
+                Ok((after_input, input[..len].to_string()))
+            } else if self.name == "swirl_quote" {
+                let (_, after_input) = match_quote(input)?;
+                let len = input.len() - after_input.len();
+                Ok((after_input, input[..len].to_string()))
+            } else if self.name == "swirl_quote_value" {
+                let (contained_text, after_input) = match_quote(input)?;
+                Ok((after_input, contained_text.to_string()))
+            } else if self.name == "swirl_header" {
+                let usage_err = MatchError::new("Correct usage: swirl_match_header({}) to match a header between curly braces.");
+                let wrap_begin = param.chars().nth(0)
+                    .ok_or(usage_err.clone())?;
+                let wrap_end = param.chars().nth(1)
+                    .ok_or(usage_err)?;
+                let (after_input, _) = match_invocation_string_def(input, rules, wrap_begin, wrap_end, SWIRL_WHITESPACE_HANDLER_HEADER)?;
+                let len = input.len() - after_input.len();
+                Ok((after_input, input[..len].to_string()))
+            } else if self.name == "swirl_body" {
+                let usage_err = MatchError::new("Correct usage: swirl_match_body({}) to match a body between curly braces.");
+                let wrap_begin = param.chars().nth(0)
+                    .ok_or(usage_err.clone())?;
+                let wrap_end = param.chars().nth(1)
+                    .ok_or(usage_err)?;
+                let (after_input, _) = match_invocation_string_def(input, rules, wrap_begin, wrap_end, SWIRL_WHITESPACE_HANDLER_BODY)?;
+                let len = input.len() - after_input.len();
+                Ok((after_input, input[..len].to_string()))
+            } else if self.name == "swirl_inner_rule_def" {
+                let (after_input, _) = match_inner_rule_definition(input, rules)?;
+                let len = input.len() - after_input.len();
+                Ok((after_input, input[..len].to_string()))
+            } else if self.name == "swirl_rule_def" {
+                let (after_input, _) = match_rule_definition(input, rules)?;
+                let len = input.len() - after_input.len();
+                Ok((after_input, input[..len].to_string()))
+            } else if self.name == "swirl_file_invoc" {
+                let (after_input, _) = match_file_invocation(input, rules)?;
+                let len = input.len() - after_input.len();
+                Ok((after_input, input[..len].to_string()))
+            } else if self.name == "swirl_ident" {
+                let (after_input, _) = match_ident(input)?;
+                let len = input.len() - after_input.len();
+                Ok((after_input, input[..len].to_string()))
+            }
+            else {
                 unreachable!()
             }
         } else {
@@ -56,6 +122,10 @@ impl Rule {
 
     // if one variant in sequence fails, the whole sequence fails.
     pub fn match_sequence(&self, input: &str, rules: &Rules, appleft: &mut MaybeInf<u32>) -> Result<String, MatchError> {
+        if !self.name.is_empty() {
+            return MatchError::new("Can only apply the unnamed rule in sequence.").tap(Err);
+        }
+
         let mut input = input.to_string();
         for (i, variant) in self.variants.iter().rev().enumerate() {
             //backtrace.push(format!("%: {{{}}}", variant.header.as_ref().unwrap_or(&"".to_string())));

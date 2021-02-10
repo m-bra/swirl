@@ -26,8 +26,11 @@
 %: negate('false`) -> {true}
 %: negate('true`) -> {false}
 
-%: swirl_inserted_whitespace (undefine) {}
-%: swirl_inserted_whitespace {}
+%: {::swirl_match_rule_invoc} -> {} :rule:invoc
+%: {::swirl_match_header({})!} -> {} {:hello:world this is a 'header`}!
+%: {::swirl_match_rule_def} -> {} %: (flag) consumed_rule -> {'lmao}`} (catch unknown rule) {{''`}}
+%: test_consumption (not) {::consumed_rule}
+%: {::test_consumption}
 
 %: -> {'
 `  ::expect(true)'

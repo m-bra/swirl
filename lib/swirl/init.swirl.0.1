@@ -1,6 +1,17 @@
 %: init_swirl {}
 %: init_swirl_0_1 {}
 %: swirlcl (predefined) {::throw_predefined_rule}
+%: swirlcl (predefined) {::throw_predefined_rule}
+%: swirl_ident (predefined) {::throw_predefined_rule}
+%: swirl_rule_invoc (predefined) {::throw_predefined_rule}
+%: swirl_var (predefined) {::throw_predefined_rule}
+%: swirl_quote (predefined) {::throw_predefined_rule}
+%: swirl_quote_value (predefined) {::throw_predefined_rule}
+%: swirl_header (predefined) {::throw_predefined_rule}
+%: swirl_body (predefined) {::throw_predefined_rule}
+%: swirl_inner_rule_def (predefined) {::throw_predefined_rule}
+%: swirl_rule_def (predefined) {::throw_predefined_rule}
+%: swirl_file_invoc (predefined) {::throw_predefined_rule}
 %: print (print) {}
 %: groups_swirl {}
 %: 1wh {' `}
@@ -77,10 +88,6 @@
 %: not_quote_end (not) {"}
 
 %: c_ident {::alnum_s}
-%: swirl_ident {::alnum_s}
-
-%: swirl_var {':`:a:swirl_ident}
-%: swirl_rule_invocation {':`:a:swirl_ident':`:a:swirl_ident}
 
 / note to swirl: this pattern can be optimized easily and effectively. /
 %: rest {}
@@ -179,14 +186,6 @@
     %: :flag {{'::init_use_feature_`}:feature_ident}
 }
 
-%: __experimenal__use_whitespace_handler(:handler:rest) {{:content:balanced_curly_inner}} -> {{'
-   %: -> {{'
-      %: {::define_whitespace_handler('`}`}:handler{'{'`)}
-      `}`}:content{'{'
-      %: {::define_whitespace_handler('`}::current_whitespace_handler{'`)}
-   `}}
-`}}
-
 %: init_feature_redefine {
    %: (redefine) :rule_name:alnum_s
 } -> {
@@ -203,9 +202,9 @@
 
 %: {::activate_rule(init_feature_redefine)}
 
-%: -> {'
-   %: `::cwd'//quotation.swirl
-`' `}
+%: raise_quote(:r:rest) -> {{''`}:r{'``}}
+%: raise_quote2(:r:rest) -> {::raise_quote(::raise_quote(:r))}
+%: raise_braced_quote(:r:rest) -> {'{`{''`}:r{'``}`}'}
 
 %: comment (undefine) {}
 %: comment_inner (undefine) {}

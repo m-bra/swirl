@@ -210,21 +210,7 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, rules: &Rules, wrap_beg
     let is_whitespace_all_end = |input| is_whitespace_end(input, true) && level.get() == 1;
     
     loop { input = {
-            let maybe_escaped = {
-                // higher escape brace indices take precedence
-                let (input_after, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[1], ESCAPE_BRACE_CLOSE[1])?;
-                if is_escaped {
-                    Some((s, input_after))
-                } else {
-                    // try again with other escape braces
-                    let (input_after, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[0], ESCAPE_BRACE_CLOSE[0])?;
-                    if is_escaped {
-                        Some((s, input_after))
-                    } else {
-                        None
-                    }
-                }
-            };
+            let maybe_escaped = match_quote(input).ok();
             
             if let Some((escaped_txt, input)) = maybe_escaped {
                 invocation_string.add_str(escaped_txt);

@@ -243,6 +243,23 @@ pub fn match_escapable_char<'a>(input: &'a Input, open: &str, close: &str) -> Ma
     }
 }
 
+/// returns contained text
+pub fn match_quote(input: &Input) -> MatchResult<(&str, &Input)> {
+    // higher escape brace indices take precedence
+    let (input_after, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[1], ESCAPE_BRACE_CLOSE[1])?;
+    if is_escaped {
+        Ok((s, input_after))
+    } else {
+        // try again with other escape braces
+        let (input_after, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[0], ESCAPE_BRACE_CLOSE[0])?;
+        if is_escaped {
+            Ok((s, input_after))
+        } else {
+            Err(MatchError::expected("Quote", input))
+        }
+    }
+}
+
 pub fn match_whitespace(input: &Input) -> MatchResult<&Input> {
     let whitespace = &[' ', '\n', '\t'];
     for w in whitespace {

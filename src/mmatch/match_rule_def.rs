@@ -5,12 +5,6 @@ use std::collections::HashSet;
 
 use std::char;
 
-pub enum SwirlStatement {
-    FileInvocation(String),
-    VariantDefinition(String, RuleVariant),
-    VarAssignment(String, String)
-}
-
 pub fn match_file_invocation<'a>(input: &'a Input, rules: &Rules) -> MatchResult<(&'a Input, &'a str)> {
     if match_rule_definition(input, rules).is_ok() {
         return MatchError::expected("file invocation (instead got rule definition)", input)
@@ -75,13 +69,6 @@ pub fn match_inner_rule_definition<'a>(mut input: &'a Input, rules: &Rules) -> M
 
         match match_str(input, "->") {
             Err(_) if !input_header_is_implicit => {
-                let missing_arrow_warning: MatchResult<()> = try {
-                    let input = match_whitespaces(input)?;
-                    match_str(input, "{")?;
-                };
-                if missing_arrow_warning.is_ok() {
-                    println!("Warning: Rule '{}' is probably missing an arrow in its variant {{{}}}", rule_name, input_header);
-                }
                 RuleVariant::new(input_header)
                     .parameter_header_option(parameter_header_option)
                     .flags(flags)
