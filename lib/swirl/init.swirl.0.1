@@ -206,6 +206,12 @@
 %: raise_quote2(:r:rest) -> {::raise_quote(::raise_quote(:r))}
 %: raise_braced_quote(:r:rest) -> {'{`{''`}:r{'``}`}'}
 
+%: quit -> {
+   %: '{::rest}` -> {}
+}
+
+%: {::define_late_whitespace_handler_methods}
+
 %: comment (undefine) {}
 %: comment_inner (undefine) {}
 

@@ -26,9 +26,24 @@
 %: negate('false`) -> {true}
 %: negate('true`) -> {false}
 
-%: {::swirl_match_rule_invoc} -> {} :rule:invoc
-%: {::swirl_match_header({})!} -> {} {:hello:world this is a 'header`}!
-%: {::swirl_match_rule_def} -> {} %: (flag) consumed_rule -> {'lmao}`} (catch unknown rule) {{''`}}
+%: {::use_whitespace_handler(remove all whitespace)} {
+   %::test_rule_5(::rest) -> {error!}
+   %: test_rule_5(this is a test) -> {this is the result}
+}
+
+%::test_rule_6(::rest) -> {error!}
+%: test_rule_6(this is a test) -> {this is the result}
+
+%: {::expect(::eq(::test_rule_5(thisisatest)|thisistheresult))}
+%: {::expect(::eq(::test_rule_5(this is a test)|error!))}
+
+%: {::expect(::eq(::test_rule_6(this is a test)|this is the result))}
+%: {::expect(::eq(::test_rule_6(this  is  a  test)|this is the result))}
+%: {::expect(::eq(::test_rule_6(thisisatest)|error!))}
+
+%: {::swirl_rule_invoc} -> {} :rule:invoc
+%: {::swirl_header({})!} -> {} {:hello:world this is a 'header`}!
+%: {::swirl_rule_def} -> {} %: (flag) consumed_rule -> {'lmao}`} (catch unknown rule) {{''`}}
 %: test_consumption (not) {::consumed_rule}
 %: {::test_consumption}
 
@@ -67,11 +82,8 @@
    string test = "bye".
    raw '%: {::expect(::eq(::test|bye)_111)}`.
    append " bye" to string test.
-`} %: meta! {'
    raw '%: {::expect(::eq(::test|bye bye))}`.
-`} %: meta! {'
    string other = string test.
-`} %: meta! {'
    raw '%: {::expect(::eq(::other|::test)_not_equal_7638)}`.
 `}
 
@@ -81,7 +93,18 @@
 %: result (clear) {}
 %: hello!
 %: {::expect(::result)}
-
+/
+    %-: c_quote {"::c_quote_inner"}
+    %-: c_quote_inner {}
+    %-: c_quote_inner {::not_quote_char::c_quote_inner_1::c_quote_inner}
+    %-: c_quote_inner_1 {::anychar}
+    %-: c_quote_inner_1 {\:c:anychar} -> {:c}
+    %-: not_quote_char (not) {"}
+/
 %: {::line_rest} -> {} %:{::throw_test_line_rest_failed}
+
+%: -> {
+   %: ::cwd//experimental//structured.swirl
+}
 
 
