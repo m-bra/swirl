@@ -2,7 +2,7 @@
 
 %: {::init_swirl_0_1}
 %: {::lean_comments_swirl}
-%: {::metatime_swirl} -> {} (catch unknown rule) {'
+%: {::metatime_swirl} -> {} (catch unknown rule) {{'
 
 %: metatime_swirl {}
 
@@ -37,7 +37,7 @@
    
    / swap defined state of metatime_true /
 
-   '%:`  {{'::`}metatime_true ''(uid) (2348796298)``} -> {
+   '%:`  {{'::`}metatime_true {''(uid) (2348796298)``}} -> {
       %'':`` metatime_true (clear) {}
    } (catch unknown rule) {
       %'':`` metatime_true (clear) {}
@@ -48,7 +48,7 @@
 
 / warning: the rule, if it exists, must have the form %: rule {} /
 %: metatime_bool_expr {rule :name:alnum_s exists} -> {
-   %':`  {{'::`}:name ''(uid) (2346283497)``} -> {
+   %':`  {{'::`}:name {''(uid) (2346283497)``}} -> {
       %'':`` metatime_true (clear) {}
       %'':`` metatime_true {}
    } (catch unknown rule) {
@@ -71,6 +71,23 @@
       create namespace metatime.
    }
 `}
+
+%: -> {
+   %: ::cwd//structured.swirl' `
+}
+
+%: maybe_param {}
+%: maybe_param {param}
+
+%: {::use_whitespace_handler(replace with '::nwh`)} for {
+
+   %: metatime_eval(syntax' ` :rulename:alnum_s = :mp:maybe_param :combination:rule_combination .:rest:continue_eval) -> {{'
+      / here, :combination will be reparsed just to be passed to ::structured_rule @9263738/
+      %: {::structured_rule(`}:rulename{' = '`}:mp :combination{'`)}
+      `}:rest{'
+   `}}
+
+}
 
 %: metatime_eval(raw :code:swirl_quote_value.:rest:continue_eval) -> {
    :code
@@ -131,7 +148,7 @@
 %: metatime_bool_expr {(:code_a:metatime_bool_expr :op:metatime_bool_op :code_b:metatime_bool_expr)} -> {
       / evaluate both codes and store the result in metatime_a and metatime_b as string "true" or "false" /
       :code_a
-      %':` {{'::`}metatime_true ''(uid) (8937649574)``} -> {
+      %':` {{'::`}metatime_true {''(uid) (8937649574)``}} -> {
          %':` metatime_a (clear) {}
          %':` metatime_a {} -> {true}
       } (catch unknown rule) {
@@ -141,7 +158,7 @@
       } (uid) (8937649574)
 
       :code_b
-      %':`  {{'::`}metatime_true ''(uid) (348756292347)``} -> {
+      %':`  {{'::`}metatime_true {''(uid) (348756292347)``}} -> {
          %':` metatime_b (clear) {}
          %':` metatime_b {} -> {true}
       } (catch unknown rule) {
@@ -182,18 +199,18 @@
 
 %: metatime_eval(assert :bool_eval:metatime_bool_expr or throw :message:alnum_s.:code:continue_eval) {} -> {
    :bool_eval
-   %':` {{'::`}metatime_true ''(uid) (9273629276)``} -> {} (catch unknown rule) {
+   %':` {{'::`}metatime_true {''(uid) (9273629276)``}} -> {} (catch unknown rule) {
       '::throw_`:message
-      %: { (uid) (9273629276)} -> {}
+      %: { (uid) (9273629276)} -> {},
    } (uid) (9273629276)
 
    :code
 }
 
 %: metatime_eval(create namespace :name:alnum_s.:code:continue_eval) {} -> {
-  %':` {{'::`}metatime_eval(
+  %':` meta! {
      assert not namespace :name exists or throw 'namespace_`:name'_already_exists`.
-  )}
+  }
   %':` :name {}
   %':` :name'__swirl_namespace_convention` {}
 
@@ -231,25 +248,24 @@
 
 %: metatime_eval(::1nwh:c:continue_eval) {} -> {:c}
 
-%: assert_empty() {}
-
 %: continue_eval {:r:rest::assert_empty(:r)}
 %: continue_eval {:r:rest} -> {::metatime_eval(:r)}
+%-: continue_eval {:r:rest} -> {%-: meta! {:r}}
 
 %: metatime_syntax {
    %: meta! {:i:balanced_curly_inner}
 } -> {
-   %: '{::metatime_eval(`:i')}`
+   %: {'{::metatime_eval('`}:i{'`)}`}
 }
 
 %: {::activate_rule(metatime_syntax)}
 
 %: meta! {
-   ::deferred_meta_instructions
+   `::deferred_meta_instructions'
    assert namespace init exists or throw could_not_create_namespace_init.
 }
 
 %: init_deferred_meta_instructions (undefine) {}
 %: deferred_meta_instructions (undefine) {} /reference to ::init_deferred_meta_instructions is now invalid/
 
-`}
+`}}

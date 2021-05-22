@@ -27,7 +27,7 @@ pub fn match_char(input: &str, expect: char) -> MatchResult<&str> {
     let err = || MatchError::expected(&expect.to_string(), input).tap(Err);
     if let Some(c) = input.chars().next() {
         if c == expect {
-            Ok(&input[1..])
+            Ok(skip_str(input, 1))
         } else {
             err()
         }
@@ -183,7 +183,7 @@ fn select_until_matching_brace<'a>(input: &'a Input, open: &str, close: &str) ->
         if input.is_empty() {
             return Err(brace_error());
         }
-        input = &input[1..];
+        input = skip_str(input, 1);
     }
 
     // old implementation
@@ -238,7 +238,7 @@ pub fn match_escapable_char<'a>(input: &'a Input, open: &str, close: &str) -> Ma
         if input.is_empty() {
             MatchError::expected("some char", input).tap(Err)
         } else {
-            Ok((&input[1..], &input[..1], false))
+            Ok((skip_str(input, 1), skip_str(input, 1), false))
         }
     }
 }

@@ -222,18 +222,18 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, rules: &Rules, wrap_beg
                 } else if input.starts_with(wrap_begin) {
                     level.set(level.get() + 1);
                     invocation_string.add_char(wrap_begin);
-                    &input[1..]
+                    skip_str(input, 1)
                 } else if input.starts_with(wrap_end) {
                     level.set(level.get() - 1);
                     if level.get() == 0 {
                         break;
                     }
                     invocation_string.add_char(wrap_end);
-                    &input[1..]
+                    skip_str(input, 1)
                 } else if input.starts_with(char::is_whitespace) {
                     let whitespace_handling_rule: &Rule = match rules.get(whitespace_handling_rule) {
                         Some(rule) => rule,
-                        None => return MatchError::new(format!("{}{}", "white spacer handler not defined at ", firstline(beginning))).tap(Err),
+                        None => return MatchError::new(format!("{}{}", "white space handler not defined at ", firstline(beginning))).tap(Err),
                     };
 
                     let (input_after, wh_count) = count_whitespaces(input)?;
@@ -255,7 +255,7 @@ pub fn match_invocation_string_def<'a>(input: &'a Input, rules: &Rules, wrap_beg
                     input_after
                 } else if input.len() > 0 {
                     invocation_string.add_char(input.chars().next().unwrap());
-                    &input[1..]
+                    skip_str(input, 1)
                 } else {
                     return MatchError::new("Unexpected end of file").tap(Err);
                 }

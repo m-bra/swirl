@@ -111,8 +111,7 @@ impl RuleVariant {
                 let after = if self.0._parameter_header.is_some() {""} else {" "};
                 format!("{}{}", rule_name, after)
             };
-            let parameters = self.0._parameter_header.as_ref().map(|parameter_header| format!("({}) ", parameter_header)).unwrap_or("".to_string());
-            println!("{} --- Try variant %: {}{}{{{}}} on line '{}'", get_indent(), rule_name, parameters, self.0._header, firstline(input));
+            println!("{} --- Try variant %: {}{} on line '{}'", get_indent(), rule_name, self, firstline(input));
             push_indent();
         }
 
@@ -121,10 +120,10 @@ impl RuleVariant {
         }
     }
 
-    pub fn on_success(&self, _rule_name: &str, _input: &str) {
+    pub fn on_success(&self, _rule_name: &str, _input: &str, result: &str) {
         if is_verbose() || self.0._flags.contains("print") || self.0._flags.contains("print_success") {
             pop_indent();
-            println!("{} >>> Success!", get_indent());
+            println!("{} >>> Success! -> {}", get_indent(), result);
         }
 
         if self.0._flags.contains("break_success") {
@@ -133,10 +132,10 @@ impl RuleVariant {
     }
 
 
-    pub fn on_failure(&self, _rule_name: &str, _input: &str) {
+    pub fn on_failure(&self, _rule_name: &str, _input: &str, error: MatchError) {
         if self.0._flags.contains("print") || self.0._flags.contains("print_failure") {
             pop_indent();
-            println!("{} >>> Failure!", get_indent());
+            println!("{} >>> {}", get_indent(), error.short_display());
         }
 
         if self.0._flags.contains("break_failure") {
@@ -183,5 +182,19 @@ impl RuleVariant {
 
     pub fn unknown_rule_catch_body(&self) -> Option<&InvocationString> {
         self.0._catch_unknown_rule.as_ref()
+    }
+}
+
+use std::fmt;
+impl fmt::Display for RuleVariant {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let parameters = self.0._parameter_header.as_ref().map({
+            |parameter_header| format!("({}) ", parameter_header)
+        }).unwrap_or("".to_string());
+        let maybe_body = self.0._body.as_ref().map(|body| {
+            format!(" -> {{{}}}", body)
+        }).unwrap_or("".to_string());
+        println!("{}{{{}}}{}", parameters, self.0._header, maybe_body);
+        Ok(())
     }
 }

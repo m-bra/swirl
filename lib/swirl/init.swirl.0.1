@@ -26,9 +26,6 @@
 %: whitespace {::1wh}
 %: whitespaces {::1nwh}
 %: anychar (any) {}
-%: helper_first_character {:a:anychar:b:anychar} -> {:a}
-%: helper_second_character {:a:anychar:b:anychar} -> {:b}
-%: helper_quotes {'`}
 %: az {a} %: az {b} %: az {c} %: az {d} %: az {e} %: az {f} %: az {g} %: az {h} %: az {i} %: az {j} %: az {k} %: az {l} %: az {m} %: az {n} %: az {o} %: az {p} %: az {q} %: az {r} %: az {s} %: az {t} %: az {u} %: az {v} %: az {w} %: az {x} %: az {y} %: az {z}
 %: AZ {A} %: AZ {B} %: AZ {C} %: AZ {D} %: AZ {E} %: AZ {F} %: AZ {G} %: AZ {H} %: AZ {I} %: AZ {J} %: AZ {K} %: AZ {L} %: AZ {M} %: AZ {N} %: AZ {O} %: AZ {P} %: AZ {Q} %: AZ {R} %: AZ {S} %: AZ {T} %: AZ {U} %: AZ {V} %: AZ {W} %: AZ {X} %: AZ {Y} %: AZ {Z}
 %: aZ {::az}
@@ -65,10 +62,7 @@
 %: float {::int}
 %: float {::int.::uint}
 
-%: index_number {::uint' `th} -> {:}
-%: index_number {first} -> {1}
-%: index_number {second} -> {2}
-%: index_number {third} -> {3}
+%: number {::float}
 
 %: alnum_s {::alnum_}
 %: alnum_s {::alnum_::alnum_s}
@@ -92,6 +86,11 @@
 / note to swirl: this pattern can be optimized easily and effectively. /
 %: rest {}
 %: rest {::anychar::rest}
+
+
+%: raise_quote(:r:rest) -> {{''`}:r{'``}}
+%: raise_quote2(:r:rest) -> {::raise_quote(::raise_quote(:r))}
+%: raise_braced_quote(:r:rest) -> {'{`{''`}:r{'``}`}'}
 
 %: -> {'
    %: `::cwd'//init//whitespace_handler.swirl 
@@ -153,6 +152,8 @@
 
 %: copy(:x:rest) {} -> {:x}
 
+%: assert_empty() {}
+
 %: throw (print) {::this_rule_promises_not_to_exist}
 %: unimplemented {::throw}
 
@@ -202,15 +203,30 @@
 
 %: {::activate_rule(init_feature_redefine)}
 
-%: raise_quote(:r:rest) -> {{''`}:r{'``}}
-%: raise_quote2(:r:rest) -> {::raise_quote(::raise_quote(:r))}
-%: raise_braced_quote(:r:rest) -> {'{`{''`}:r{'``}`}'}
-
 %: quit -> {
    %: '{::rest}` -> {}
 }
 
+%: quit('print rest`) -> {
+   %: '{::rest}`
+}
+
 %: {::define_late_whitespace_handler_methods}
+
+/ a list is just a rule repeated between commas /
+/ when used, you should include the list-invocation between parens /
+/ e.g. %: some_function([:l:string_list]) /
+%::make_list_type(:element:alnum_s) -> {
+   '%::`:element'_list` {}
+   '%: `:element'_list` {{'::`}:element}
+   '%: `:element'_list` {{'::`}:element'::nwh,::nwh`'::`:element'_list`}
+}
+
+%::string {::c_quote}
+%: {::make_list_type(string)}
+%: {::make_list_type(float)}
+%: {::make_list_type(int)}
+%::number_list {float_list}
 
 %: comment (undefine) {}
 %: comment_inner (undefine) {}

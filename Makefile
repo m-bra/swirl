@@ -34,6 +34,7 @@ global_link:
 	ln -sf $(prj)/bin/$(target) $(base)/bin/$(target)
 	ln -sf $(prj)/bin/$(target) $(base)/bin/swirl
 	ln -sf $(prj)/lib/swirl $(base)/lib/swirl
+	ln -sf $(prj)/bin/argswirl $(base)/bin/argswirl
 
 .PHONY: global_unlink
 global_unlink:

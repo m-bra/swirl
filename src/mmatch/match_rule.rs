@@ -15,11 +15,11 @@ impl Rule {
             match v.try_match(input, param, rules, &self.name, i) {
                 // call on_fail, on_success
                 Ok((input, result)) => {
-                    v.on_success(&self.name, input);
+                    v.on_success(&self.name, input, &result);
                     return Ok((input, result))
                 },
                 Err(err) => {
-                    v.on_failure(&self.name, input);
+                    v.on_failure(&self.name, input, err.clone());
                     candidate_errors.push(err);
                 },
             }
@@ -67,16 +67,17 @@ impl Rule {
                 let (contained_text, after_input) = match_quote(input)?;
                 Ok((after_input, contained_text.to_string()))
             } else if self.name == "swirl_header" {
-                let usage_err = MatchError::new("Correct usage: swirl_match_header({}) to match a header between curly braces.");
+                let usage_err = MatchError::new("Correct usage: swirl_header({}) to match a header between curly braces.");
                 let wrap_begin = param.chars().nth(0)
                     .ok_or(usage_err.clone())?;
                 let wrap_end = param.chars().nth(1)
                     .ok_or(usage_err)?;
-                let (after_input, _) = match_invocation_string_def(input, rules, wrap_begin, wrap_end, SWIRL_WHITESPACE_HANDLER_HEADER)?;
+                let (after_input, maybe_invoc) = match_invocation_string_def(input, rules, wrap_begin, wrap_end, SWIRL_WHITESPACE_HANDLER_HEADER)?;
+                maybe_invoc.ok_or(MatchError::expected("Rule Header", input))?;
                 let len = input.len() - after_input.len();
                 Ok((after_input, input[..len].to_string()))
             } else if self.name == "swirl_body" {
-                let usage_err = MatchError::new("Correct usage: swirl_match_body({}) to match a body between curly braces.");
+                let usage_err = MatchError::new("Correct usage: swirl_body({}) to match a body between curly braces.");
                 let wrap_begin = param.chars().nth(0)
                     .ok_or(usage_err.clone())?;
                 let wrap_end = param.chars().nth(1)
@@ -144,12 +145,12 @@ impl Rule {
 
             input = match variant.try_match(&input, "", rules, "", i) {
                 Ok((unconsumed, replace)) => {
+                    variant.on_success(&self.name, &input, &replace);
                     let input = replace + unconsumed;
-                    variant.on_success(&self.name, &input);
                     input
                 },
                 Err(err) => {
-                    variant.on_failure(&self.name, &input);
+                    variant.on_failure(&self.name, &input, err.clone());
                     return Err(err);
                 }
             };

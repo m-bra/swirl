@@ -96,7 +96,8 @@ impl RuleVariant {
                 if self.is_any() {
                     assert!(self.header().is_empty(), "(any) rule variants must have an empty header.");
                     if input.len() > 0 {
-                        (&input[1..], String::from_str(&input[0..1]).unwrap())
+                        let x: (&str, String) = (skip_str(input, 1), substr(input, 0, 1).to_string());
+                        x
                     } else {
                         return MatchError::expected("Any char", input).tap(Err)
                     }
@@ -118,7 +119,7 @@ impl RuleVariant {
 
                 if self.header_negated() // [1]
                 || self.unknown_rule_catch_body().is_some()
-                || self.parameter_header().is_some() // [2]
+                || self.parameter_header().is_some() // [2] // @ENSURE("tail optimization allows no")
                 || !recursive_param.is_empty() // [4] a not-supported example would be %: rec {::other::rec(recursive param)}
                 || self.flags().len() > 0 // no flags allowed
                 {

@@ -86,15 +86,15 @@ impl MatchError {
 
 impl MatchError {
     // \n included
-    fn display_without_backtrace(&self, indent: impl AsRef<str>) -> String {
+    fn display_without_backtrace(&self, indent: impl AsRef<str>, with_candidates: bool) -> String {
         let indent = indent.as_ref();
 
         match &self.error_type {
             ErrorType::Generic {msg, subErrors} => {
-                let subs = subErrors.iter().map(|err| {
-                    err.display_without_backtrace(indent.to_string() + "  ")
-                }).collect::<Vec<_>>().join("");
-                if !subErrors.is_empty() {
+                if with_candidates && !subErrors.is_empty() {
+                    let subs = subErrors.iter().map(|err| {
+                        err.display_without_backtrace(indent.to_string() + "  ", true)
+                    }).collect::<Vec<_>>().join("");
                     format!("{}{}\n{}candidates: {}\n{}\n", indent, msg, indent, subErrors.len(), subs)
                 } else {
                     format!("{}{}\n", indent, msg)
@@ -104,7 +104,10 @@ impl MatchError {
                 format!("{}{}\n", indent, msg)
             }
         }
-        
+    }
+
+    pub fn short_display(&self) -> String {
+        self.display_without_backtrace("", false)
     }
 }
 
@@ -112,7 +115,7 @@ use std::fmt;
 impl fmt::Display for MatchError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let bt = self.backtrace.join("\n");
-        write!(f, "{} at {}", self.display_without_backtrace(""), bt)
+        write!(f, "{} at {}", self.display_without_backtrace("", true), bt)
     }
 }
 

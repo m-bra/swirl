@@ -76,7 +76,7 @@ pub fn match_inner_rule_definition<'a>(mut input: &'a Input, rules: &Rules) -> M
                     .and_then(|rule_variant| Ok((input, (rule_name, rule_variant))))
             },
             Err(_) => Err(
-                MatchError::new("This is not a rule definition, this is a file invocation.")
+                MatchError::new("This is not a rule definition.")
             ),
             Ok(input) => {
                 let input = match_whitespaces(input)?;
@@ -91,6 +91,7 @@ pub fn match_inner_rule_definition<'a>(mut input: &'a Input, rules: &Rules) -> M
                         let catch_body_start = input;
                         let (input, catch_body) = match_invocation_string_def(input, rules, '{', '}', SWIRL_WHITESPACE_HANDLER_CATCH_BODY)?;
                         let catch_body = catch_body.ok_or_else(|| MatchError::expected("Catch Body", catch_body_start))?;
+                        //let input = match_whitespaces(input)?;
                         (input, Some(catch_body))
                     }
                     Err(_) => (input, None)
