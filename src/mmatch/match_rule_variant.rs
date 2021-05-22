@@ -5,6 +5,18 @@ use std::str::FromStr;
 static mut first: bool = true;
 
 impl RuleVariant {
+    pub fn backtraceline(&self, name: &str, input: &str) -> String {
+        let input_view = input_view(input);
+        let mut param_header_str =  self.parameter_header().map(|ph| format!("({})", ph)).unwrap_or("".to_string());
+        if param_header_str != "" {
+            param_header_str += " ";
+        }
+        if name == "" {
+            format!("%: {}{{{}}} on '{}'", param_header_str, self.header(), input_view)
+        } else {
+            format!("%: {}{} {{{}}} on '{}'", name, param_header_str, self.header(), input_view)
+        }
+    }
 
     // Returns None if no "unknown rule" error was thrown
     // Returns Some if such an error has been caught, with the result of the catch body.
@@ -20,7 +32,7 @@ impl RuleVariant {
                 let catch_body_result = match_invocation_string_pass(catch_body, rules, &HashMap::new())?;
                 Some(catch_body_result.bind_vars()?)
             }
-            Err(err) => None, 
+            Err(_) => None, 
         }.tap(Ok)
     }
 
@@ -55,7 +67,7 @@ impl RuleVariant {
     /// return the remaining unconsumed input and the replacement string
     /// variant_index is 0 if it is the last variant (which is the first to be applied)
     pub fn try_match<'a>(&self, input: &'a str, param: &str, rules: &Rules, name: impl AsRef<str>, variant_index: usize) -> MatchResult<(&'a str, String)> { 
-        (|| {
+        trace(self.backtraceline(name.as_ref(), input), || {
             unsafe { 
                 if first {
                     //breakpoint();
@@ -84,7 +96,8 @@ impl RuleVariant {
                 if self.is_any() {
                     assert!(self.header().is_empty(), "(any) rule variants must have an empty header.");
                     if input.len() > 0 {
-                        (&input[1..], String::from_str(&input[0..1]).unwrap())
+                        let x: (&str, String) = (skip_str(input, 1), substr(input, 0, 1).to_string());
+                        x
                     } else {
                         return MatchError::expected("Any char", input).tap(Err)
                     }
@@ -99,14 +112,14 @@ impl RuleVariant {
                     }
                 }
             } else {
-                let (recursion_var, recursive_param) = match unsafe { self.header().end_invocation().unwrap() } {
+                let (_, recursive_param) = match unsafe { self.header().end_invocation().unwrap() } {
                     Invocation::RuleInvocation(result_var, _, param) => (result_var, param),
                     Invocation::VarInvocation(_) => unreachable!(),
                 };
 
                 if self.header_negated() // [1]
                 || self.unknown_rule_catch_body().is_some()
-                || self.parameter_header().is_some() // [2]
+                || self.parameter_header().is_some() // [2] // @ENSURE("tail optimization allows no")
                 || !recursive_param.is_empty() // [4] a not-supported example would be %: rec {::other::rec(recursive param)}
                 || self.flags().len() > 0 // no flags allowed
                 {
@@ -194,9 +207,6 @@ impl RuleVariant {
                     (input, result_str).tap(Ok)
                 })?
             }.tap(Ok)
-
-        })().trace({
-            format!("%: {} {{{}}} on '{}'", name.as_ref(), self.header(), firstline(input))
         })
     }
 }

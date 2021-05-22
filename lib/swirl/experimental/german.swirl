@@ -1,0 +1,20 @@
+
+%: /usr/local/lib/swirl/init.swirl.0.1
+
+%: meta {
+	create namespace new_var_946378.
+}
+
+%: include_syntax {
+    %: include! (:v:swirl_var):r:rest
+} -> {'
+    %: {} -> {:new_var_946378:`:v':new_var_946378}`:r'
+`}
+%: {::activate_rule(include_syntax)}
+
+%: include! (:swirl_lib)/lean_comment.swirl
+
+
+/ <thisterm>.{} feature /
+
+this file ends here/ and this is a comment/.

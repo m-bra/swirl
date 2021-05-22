@@ -22,7 +22,7 @@ impl fmt::Display for InvocationString {
             }
             for invocation in invocations {
                 if let Invocation::RuleInvocation(_, ident, _) = invocation {
-                    if ident == SWIRL_INSERTED_WHITESPACE_IDENT {
+                    if SWIRL_WHITESPACE_RULES.contains(&&**ident/*uhm okay*/) {
                         write!(f, " ")?;
                     } else {
                         write!(f, "{}", invocation)?;

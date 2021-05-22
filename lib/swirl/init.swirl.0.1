@@ -1,6 +1,17 @@
 %: init_swirl {}
 %: init_swirl_0_1 {}
 %: swirlcl (predefined) {::throw_predefined_rule}
+%: swirlcl (predefined) {::throw_predefined_rule}
+%: swirl_ident (predefined) {::throw_predefined_rule}
+%: swirl_rule_invoc (predefined) {::throw_predefined_rule}
+%: swirl_var (predefined) {::throw_predefined_rule}
+%: swirl_quote (predefined) {::throw_predefined_rule}
+%: swirl_quote_value (predefined) {::throw_predefined_rule}
+%: swirl_header (predefined) {::throw_predefined_rule}
+%: swirl_body (predefined) {::throw_predefined_rule}
+%: swirl_inner_rule_def (predefined) {::throw_predefined_rule}
+%: swirl_rule_def (predefined) {::throw_predefined_rule}
+%: swirl_file_invoc (predefined) {::throw_predefined_rule}
 %: print (print) {}
 %: groups_swirl {}
 %: 1wh {' `}
@@ -14,11 +25,7 @@
 %: 1nwh {::1wh::nwh}
 %: whitespace {::1wh}
 %: whitespaces {::1nwh}
-%: swirl_inserted_whitespace {::whitespaces}
 %: anychar (any) {}
-%: helper_first_character {:a:anychar:b:anychar} -> {:a}
-%: helper_second_character {:a:anychar:b:anychar} -> {:b}
-%: helper_quotes {'`}
 %: az {a} %: az {b} %: az {c} %: az {d} %: az {e} %: az {f} %: az {g} %: az {h} %: az {i} %: az {j} %: az {k} %: az {l} %: az {m} %: az {n} %: az {o} %: az {p} %: az {q} %: az {r} %: az {s} %: az {t} %: az {u} %: az {v} %: az {w} %: az {x} %: az {y} %: az {z}
 %: AZ {A} %: AZ {B} %: AZ {C} %: AZ {D} %: AZ {E} %: AZ {F} %: AZ {G} %: AZ {H} %: AZ {I} %: AZ {J} %: AZ {K} %: AZ {L} %: AZ {M} %: AZ {N} %: AZ {O} %: AZ {P} %: AZ {Q} %: AZ {R} %: AZ {S} %: AZ {T} %: AZ {U} %: AZ {V} %: AZ {W} %: AZ {X} %: AZ {Y} %: AZ {Z}
 %: aZ {::az}
@@ -55,31 +62,39 @@
 %: float {::int}
 %: float {::int.::uint}
 
-%: index_number {::uint th} -> {:}
-%: index_number {first} -> {1}
-%: index_number {second} -> {2}
-%: index_number {third} -> {3}
+%: number {::float}
 
 %: alnum_s {::alnum_}
 %: alnum_s {::alnum_::alnum_s}
 
+%: no_tail_opt {}
+
 %: c_quote {"::c_quote_inner"}
 %: c_quote_inner {}
 %: c_quote_inner {::not_quote_end::anychar::c_quote_inner}
-%: c_quote_inner {\:c:anychar:r:c_quote_inner} -> {:c'`:r}
+%: c_quote_inner {\:c:anychar:r:c_quote_inner}
+
+%: c_quote_value {":inner:c_quote_inner_value"} -> {:inner}
+%: c_quote_inner_value {}
+%: c_quote_inner_value {::not_quote_end::anychar::c_quote_inner}
+%: c_quote_inner_value {\:c:anychar:r:c_quote_inner::no_tail_opt} -> {:c'`:r}
 
 %: not_quote_end (not) {"}
 
-
 %: c_ident {::alnum_s}
-%: swirl_ident {::alnum_s}
-
-%: swirl_var {':`:a:swirl_ident}
-%: swirl_rule_invocation {':`:a:swirl_ident':`:a:swirl_ident}
 
 / note to swirl: this pattern can be optimized easily and effectively. /
 %: rest {}
 %: rest {::anychar::rest}
+
+
+%: raise_quote(:r:rest) -> {{''`}:r{'``}}
+%: raise_quote2(:r:rest) -> {::raise_quote(::raise_quote(:r))}
+%: raise_braced_quote(:r:rest) -> {'{`{''`}:r{'``}`}'}
+
+%: -> {'
+   %: `::cwd'//init//whitespace_handler.swirl 
+`}
 
 /warning: might not work/
 %: not (not) (:r:rest) {:r}
@@ -87,10 +102,11 @@
 %: until_space {}
 %: until_space {::not_whitespace::anychar::until_space}
 
+/this should be moved to metatime/
 %: bake_rule(:name:alnum_s = maybe :r:rest) -> {
    %: :name {}
    %: :name :r
-} 
+}
 
 %: bake_rule(until_:name:alnum_s = until :r:rest) -> {
    %: until_:name (undefine) {}
@@ -134,9 +150,9 @@
 %: non_delimiter(:begin:until_space :end:until_space) {::not(:begin)::not(:end)}
 %: non_delim_text(:begin:until_space :end:until_space) {::unimplemented}
 
-%: swirl_quote {::balanced_string(::unimplemented)}
-
 %: copy(:x:rest) {} -> {:x}
+
+%: assert_empty() {}
 
 %: throw (print) {::this_rule_promises_not_to_exist}
 %: unimplemented {::throw}
@@ -150,7 +166,7 @@
 / include metatime.swirl here /
 
 %: init_deferred_meta_instructions {} -> {
-   create namespace swirl;
+   create namespace swirl.
    create namespace init.
 }
 
@@ -178,7 +194,39 @@
    %: :rule_name
 }
 
+%: init_feature_redefine {
+   '%::`::nwh:rule_name:alnum_s
+} -> {
+   %: (undefine) :rule_name {}
+   %: :rule_name
+}
+
 %: {::activate_rule(init_feature_redefine)}
+
+%: quit -> {
+   %: '{::rest}` -> {}
+}
+
+%: quit('print rest`) -> {
+   %: '{::rest}`
+}
+
+%: {::define_late_whitespace_handler_methods}
+
+/ a list is just a rule repeated between commas /
+/ when used, you should include the list-invocation between parens /
+/ e.g. %: some_function([:l:string_list]) /
+%::make_list_type(:element:alnum_s) -> {
+   '%::`:element'_list` {}
+   '%: `:element'_list` {{'::`}:element}
+   '%: `:element'_list` {{'::`}:element'::nwh,::nwh`'::`:element'_list`}
+}
+
+%::string {::c_quote}
+%: {::make_list_type(string)}
+%: {::make_list_type(float)}
+%: {::make_list_type(int)}
+%::number_list {float_list}
 
 %: comment (undefine) {}
 %: comment_inner (undefine) {}

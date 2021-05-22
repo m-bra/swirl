@@ -1,47 +1,146 @@
-%: lib/swirl/init.swirl
 
-%: eq(::c_ident|::c_ident) {} -> {false}
-%: eq(:a:c_ident|:a) {} -> {true}
+%: cwd -> {lib//swirl//}
+%: -> {'
+   %: `::cwd'//init.swirl.0.1
+`}
 
-%: expect(::rest) {} -> {::throw}
-%: expect('true`) {} -> {}
+%::new_rule {}
 
-%: negate('false`) {} -> {true}
-%: negate('true`) {} -> {false}
+%: -> {'
+   %: `::cwd'//lean_comments.swirl
+   %: `::cwd'//metatime.swirl
+`}
 
-%: swirl_inserted_whitespace (undefine) {}
-%: swirl_inserted_whitespace {}
+%: {::bake_rule(until_bar = until |)}
 
-%: {} -> {'
+%: eq(::until_bar|::rest) {} -> {false}
+%: eq(:a:until_bar|:a) {} -> {true}
+
+%: expect(false:r:rest) {} -> {
+   %: -> {
+      %: {{'::throw_`}:r}
+   }
+}
+%: expect(true::rest) {} -> {}
+
+%: expect_eq(:r:rest) -> {::expect(::eq(:r))}
+
+%: negate('false`) -> {true}
+%: negate('true`) -> {false}
+
+%: {::use_whitespace_handler(remove all whitespace)} {
+   %::test_rule_5(::rest) -> {error!}
+   %: test_rule_5(this is a test) -> {this is the result}
+}
+
+%::test_rule_6(::rest) -> {error!}
+%: test_rule_6(this is a test) -> {this is the result}
+
+%: {::expect(::eq(::test_rule_5(thisisatest)|thisistheresult))}
+%: {::expect(::eq(::test_rule_5(this is a test)|error!))}
+
+%: {::expect(::eq(::test_rule_6(this is a test)|this is the result))}
+%: {::expect(::eq(::test_rule_6(this  is  a  test)|this is the result))}
+%: {::expect(::eq(::test_rule_6(thisisatest)|error!))}
+
+%: test_string_list([::string_list]) {}
+%: {::test_string_list(["hel lo", "wo rld", "\""])}
+
+%: {::swirl_rule_invoc} -> {} :rule:invoc
+%: {::swirl_header({})!} -> {} {:hello:world this is a 'header`}!
+%: {::swirl_rule_def} -> {} %: (flag) consumed_rule -> {'lmao}`} (catch unknown rule) {{''`}}
+%: test_consumption (not) {::consumed_rule}
+%: {::test_consumption}
+
+%: -> {'
 `  ::expect(true)'
 `  ::expect(::negate(false))'
 `  ::expect(::negate(::eq(hello|bye)))'
 `  ::expect(::eq(same|same))'
 `}
 
-%: one {} -> {1}
+%: one -> {1}
 
 %: {
    :y:one
    :x:copy(::one'_`:y'_`1)
-} -> {
    ::expect(::eq(:x|1_1_1))
 }
-
-%: //usr//local//lib//swirl//metatime.swirl
 
 %: test_rule {}
 
 %: meta! {
-   'assert true or throw 2.
+   assert true or throw 2.
    assert not false or throw 3.
    assert not (true and (false and false)) or throw 4.
    assert rule test_rule exists or throw 5.
    create namespace test_namespaceee with tag test_tag.
    assert namespace test_namespaceee exists or throw 6.
    assert namespace test_namespaceee has tag test_tag or throw 7.
-   assert not namespace test_namespaceee has tag some_other_tag or throw 8.`
+   assert not namespace test_namespaceee has tag some_other_tag or throw 8.
+
+   raw '%: test_rule_2 {}`.
+   assert rule test_rule_2 exists or throw 9.
+
+   string test = "hello".
+   string test = "bye".
+   raw '%: {::expect(::eq(::test|bye)_111)}`.
+   append " bye" to string test.
+   raw '%: {::expect(::eq(::test|bye bye))}`.
+   string other = string test.
+   raw '%: {::expect(::eq(::other|::test)_not_equal_7638)}`.
 }
+
+%: meta! {
+   syntax structured_test = param 
+      match all of
+         (({a}->{b} {c})?({d})+ or ({e}->{f} or ({g}))*) 
+      or 
+         {::rest} -> {error!}.
+}
+
+%: {::expect_eq(::structured_test(acddd)|bcddd)}
+%: {::expect_eq(::structured_test(ddddd)|ddddd)}
+%: {::expect_eq(::structured_test(geegge)|gffggf)}
+%: {::expect_eq(::structured_test(eeeeee)|ffffff)}
+%: {::expect_eq(::structured_test(aceg)|error!)}
+%: {::expect_eq(::structured_test(bcdd)|error!)}
+%: {::expect_eq(::structured_test()|)}
+%: {::expect_eq(::structured_test(acddac)|error!)}
+
+%: {::quit}
+
+
+/ Herr, wenn es dir misfällt, - ich wollte grad sagen: dann will ich alles das hier löschen, /
+/ aber das zu sagen, schmerzte meinem Herzen. Ja, es ist ganz, wie der Herr es sagt, und immer /
+/ wieder bestätigt dein Wort sich aufs neue: "Wo dein Schatz ist, da ist auch dein Herz!" /
+/ Und durch diese deine Worte erkenne ich dich, Herr, diese Worte sind ein Wunder! /
+/ Viel grösser, als wenn du einfach vor meinen Augen zaubern würdest, denn dann würde ich dich klar sehen, /
+/ aber was sollen wir an dir sehen? Deine Fähigkeit, auch Wunderzauber zu bringen, oder vielmehr /
+/ deine wunderliche Liebe! Dein Erbarmen! Dein Vergeben! Deine Weisheit - echte Weisheit! /
+/ Herr, ich freue mich so, dass du zu uns redest. Wir brauchen dein Wort. Und so sehr brauchen wir deinen Geist. /
+/ Deswegen soll das hier kein Schatz auf Erden sein. Ich will es nur tun, wenn es dich auch verherrlicht. /
+/ Gefällt es dir nicht wohl, wenn ein Künstler etwas malt, das einen Hauch deiner Herrlichkeit erhaschen will? /
+/ Freut es dich nicht, dass Bach und Händel deine Herrlichkeit in Musik vermitteln, neben den Worten? /
+/ Ist es möglich, dass ich durch ein virtuelles Kunstwerk dir Dank opfern kann? Denn mich freut das Programmieren, /
+/ aber es soll mich niemals einen Nanometer von dir wegbringen! Dann will ich es ablegen und zu meinen alten, /
+/ verderblichen Werken zählen. // Also: Allezeit will ich ein dir geopfertes, heiliges Gefäss sein. /
+/ Denn in mir will ich deinen Geist empfangen. Also muss ich das Innere rein halten, und keinen Schlamm reinlassen. /
+/ Also lass ich mich nicht in Hetze verstricken! Ich lasse deinen Schöpfergeist durch mich wirken, /
+/ Herr, nicht ich will schaffen, sondern du durch mich. Tu durch mich, was dir gefällt. Das soll gelten für mein Leben. /
+/ Wenn du durch mich im Virtuellen wirken willst, dann wirke durch mich im Virtuellen. Wenn du durch mich nicht im Virtuellen /
+/ wirken willst, vielleicht weil das Virtuelle zu sehr in Verführung bringt - halte mich fern! Aber ich habe doch recht gelesen, /
+/ als du sagst, dass die Versuchung durch Leidenschaften in meinem Fleisch lockt. Halte mich rein. Bewahre mein Herz. /
+/ Ich bin dein. Amen. /
+
+/ Wie aber bin ich dir ein heiliges Gefäss, wo die Sünde in mir, dem geringen Menschen, immer wieder zurückkehrt? (Psalm 51:3-4) /
+/ Röm 3,21-26 /
+/ Jetzt aber ist unabhängig vom Gesetz die Gerechtigkeit Gottes offenbart worden, bezeugt vom Gesetz und von den Propheten:	 /
+/ die Gerechtigkeit Gottes aus dem Glauben an Jesus Christus, offenbart für alle, die glauben. Denn es gibt keinen Unterschied:	 /
+/ Alle haben gesündigt und die Herrlichkeit Gottes verloren.	 /
+/ Ohne es verdient zu haben, werden sie gerecht, dank seiner Gnade, durch die Erlösung in Christus Jesus.	 /
+/ Ihn hat Gott dazu bestimmt, Sühne zu leisten mit seinem Blut, Sühne, wirksam durch Glauben. So erweist Gott seine Gerechtigkeit durch die Vergebung der Sünden, die früher, in der Zeit seiner Geduld, begangen wurden;	 /
+/ er erweist seine Gerechtigkeit in der gegenwärtigen Zeit, um zu zeigen, dass er gerecht ist und den gerecht macht, der an Jesus glaubt. /
 
 %: test_syntax {%: hello!} -> {%: result {} -> {true}}
 %: {::activate_rule(test_syntax)}
@@ -51,3 +150,5 @@
 %: {::expect(::result)}
 
 %: {::line_rest} -> {} %:{::throw_test_line_rest_failed}
+
+

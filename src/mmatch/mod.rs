@@ -27,7 +27,7 @@ pub fn match_char(input: &str, expect: char) -> MatchResult<&str> {
     let err = || MatchError::expected(&expect.to_string(), input).tap(Err);
     if let Some(c) = input.chars().next() {
         if c == expect {
-            Ok(&input[1..])
+            Ok(skip_str(input, 1))
         } else {
             err()
         }
@@ -89,19 +89,19 @@ pub fn test_match_invocation() {
     );
 }
 
-pub fn match_rule_invoc<'a>(input: &'a Input) -> MatchResult<(&'a Input, Invocation)> {
+pub fn match_rule_invoc<'a>(input: &'a Input, rules: &Rules) -> MatchResult<(&'a Input, Invocation)> {
     let input = match_char(input, RULE_INVOCATION_CHAR)?;
     let (input, variable_ident) = match_ident(input).unwrap_or((input, ""));
     let input = match_char(input, RULE_INVOCATION_CHAR)?;
     let (input, rule_ident) = match_ident(input)?;
-    let (input, invoc) = match_invocation_string_def(input, '(', ')', &WhiteSpaceHandling::TrimLineBegin)?;
+    let (input, invoc) = match_invocation_string_def(input, rules, '(', ')', SWIRL_WHITESPACE_HANDLER_PARAM_INPUT)?;
     let invoc = invoc.unwrap_or(InvocationString::empty());
 
     (input, Invocation::new_rule_invoc_with_param(variable_ident, rule_ident, invoc)).tap(Ok)
 }
 
-pub fn match_invocation(input: &Input) -> MatchResult<(&Input, Invocation)> {
-    if let Ok((input, invoc)) = match_rule_invoc(input) {
+pub fn match_invocation<'a>(input: &'a Input, rules: &Rules) -> MatchResult<(&'a Input, Invocation)> {
+    if let Ok((input, invoc)) = match_rule_invoc(input, rules) {
         (input, invoc).tap(Ok)
     } else {
         match_var(input)
@@ -183,7 +183,7 @@ fn select_until_matching_brace<'a>(input: &'a Input, open: &str, close: &str) ->
         if input.is_empty() {
             return Err(brace_error());
         }
-        input = &input[1..];
+        input = skip_str(input, 1);
     }
 
     // old implementation
@@ -238,33 +238,56 @@ pub fn match_escapable_char<'a>(input: &'a Input, open: &str, close: &str) -> Ma
         if input.is_empty() {
             MatchError::expected("some char", input).tap(Err)
         } else {
-            Ok((&input[1..], &input[..1], false))
+            Ok((skip_str(input, 1), skip_str(input, 1), false))
+        }
+    }
+}
+
+/// returns contained text
+pub fn match_quote(input: &Input) -> MatchResult<(&str, &Input)> {
+    // higher escape brace indices take precedence
+    let (input_after, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[1], ESCAPE_BRACE_CLOSE[1])?;
+    if is_escaped {
+        Ok((s, input_after))
+    } else {
+        // try again with other escape braces
+        let (input_after, s, is_escaped) = match_escapable_char(input, ESCAPE_BRACE_OPEN[0], ESCAPE_BRACE_CLOSE[0])?;
+        if is_escaped {
+            Ok((s, input_after))
+        } else {
+            Err(MatchError::expected("Quote", input))
         }
     }
 }
 
 pub fn match_whitespace(input: &Input) -> MatchResult<&Input> {
     let whitespace = &[' ', '\n', '\t'];
-    let mut errors = vec![];
     for w in whitespace {
-        errors.push(match match_char(input, *w) {
+        match match_char(input, *w) {
             Ok(input) => return Ok(input),
-            Err(err) => err,
-        });
+            Err(_) => ()
+        }
     }
     MatchError::expected("whitespace", input).tap(Err)
 }
 
-pub fn match_whitespaces(mut input: &Input) -> MatchResult<&Input> {
+pub fn match_whitespaces(input: &Input) -> MatchResult<&Input> {
+    let (input, _) = count_whitespaces(input)?;
+    return Ok(input);
+}
+
+pub fn count_whitespaces(mut input: &Input) -> MatchResult<(&Input, usize)> {
+    let mut count = 0usize;
     while let Ok(new_input) = match_whitespace(input) {
         input = new_input;
+        count += 1;
     }
-    Ok(input)
+    Ok((input, count))
 }
 
 
-pub fn match_rule_invoc_<'a>(input: &'a Input, _: &()) -> MatchResult<(&'a Input , Invocation)> {
-    match_rule_invoc(input)
+pub fn match_rule_invoc_<'a>(input: &'a Input, _: &(), rules: &Rules) -> MatchResult<(&'a Input , Invocation)> {
+    match_rule_invoc(input, rules)
 }
 
 pub fn match_var_<'a>(input: &'a Input, _: &()) -> MatchResult<(&'a Input, Invocation)> {

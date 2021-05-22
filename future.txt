@@ -7,6 +7,33 @@
  * %: https://example.com/include.swirl
  * swirl can also function as an on-the-fly preprocessor for interpreted languages.
 
+ * internally, i should seriously start passing around syntax trees instead of raw strings... search for @9263738
+
+ * i might introduce
+      %: meta! {
+          syntax email_char = {::aZ} or {::09} or {.}.
+          syntax email = {::email_char}+@{::email_char}+.
+      }
+   , but that clashes with
+      %: (syntax) {::some_rule}
+   , however, i thought i should replace (syntax), because all this flag does is make the application of some_rule
+   also effective for results of other rule applications. but this doesnt make the rule more or less of a syntax.
+
+ * needed: counted quotes. example:
+   %: add_variant(:content:rest) -> {
+      %: rule {some text and then {{''`}:content{'``}}}
+   }
+   :content is intended to be inserted as constant text, without rule invocations.
+   however, the caller could just pass ::add_variant({'``}}'::invocation`{{''`}) e.g. it could just pass anti-quoted `}::rule{'
+   thats why we need counted rules. :content corresponds to a String in Rust. taking length is O(1). 
+   also, advancing a &str by a number is O(n) but still efficient enough.
+   so instead of 
+      {{''`}:content{'``}} 
+   it should be possible to do sth like
+      ->STRLEN(content):content
+   which is interpreted like a quote but with a fixed specified length.
+   just gotta work out a non-sucky way to do it though....
+
  * library shouldnt include from /usr/local/lib/ ...
 
  * make backtrace userdefined... 

@@ -1,0 +1,54 @@
+%: cwd -> {lib//swirl}
+%: -> {'
+    %: `::cwd'//init.swirl.0.1
+    %: `::cwd'//lean_comment.swirl
+`}
+
+/ was aber, wenn der Herr sagt: /
+/ Jetzt ist nicht die Zeit, mir Kunstwerke zu opfern, /
+/ weisst du denn nicht, in was für einer Zeit du bist? /
+/ Sagst du nicht selber, der Tag des Gerichts könnte nah sein? /
+/ Siehst du nicht selber, dass wieder Zeichen die Ankunft des ANTIchristen andeuten? /
+/ Oder zumindest, dass die nächsten Wehen einsetzen? /
+/ Wenn du Kriegsgeschrei hörst, setzt du dann deine Kopfhörer auf und tanzt unbekümmert? /
+/ /
+/ Wenn der Herr das aber sagt, ich frage mich: Was soll ich tun? /
+/ Was würde Er denn sagen? Geh hinaus, und verkündige die Frohe Botschaft, /
+/ solange dir der Mund nicht verboten wird! Solange die Seelen noch zu retten sind! /
+/ /
+/ Ja Herr, ich werde es tun. Wenn der Rauch sich von der Stiftshütte hebte, /
+/ sobald ging Sein Heiliges Volk. Und wenn der Rauch sich für einen Tag legte, dann /
+/ blieben sie nur für einen Tag. /
+/ Und wenn der Rauch sich für zwei Tage oder einen ganzen Monat legte, /
+/ dann blieben sie genau diese Zeit. /
+/ /
+/ Herr, der Teufel liegt mir auf den Felsen, ja, ich opfere dir mein Werk, aber /
+/ der Hinterlistige reibt sich die Hände, mein gut gemeintes Opfer in der nächsten Minute umzukehren zum Bösen /
+/ dass ich mich mehr dem Dankopfer zukehre als Dir, /
+/ Ja, der Satan ist sehr intelligent, ist es nicht so? /
+/ /
+/ Also Herr, du weisst, ich lerne dein Lied, ich werde es auch gleich nochmal anstimmen, damit ich es vorsingen kann, /
+/ Du gabst mir heute eine überraschende Begegnung, von einem kräftigen, anstössigen Prediger, /
+/ ich danke dir. Bitte führe mich auf deinem guten Weg. Halte das Böse fern von mir - ja, ich muss mich hüten. /
+/ Aber, sind nicht viele Menschen im virtuellen Raum? Soll nicht auch da dein Licht leuchten? /
+/ Ich weiss aber nicht, wie ich diese Sprache zu deinem Gefallen nutzen kann. Vielleicht hast du ja etwas vor. /
+/ /
+/ Vorbereiten auf den Tag, das tue ich nicht, indem ich mir stabile Mauern baue oder gar Bunker /
+/ Oder mir einen Essensvorrat anlege - auch wenn das sicherlich nicht dumm ist /
+/ Sondern dass ich ein reines Herz behalte, damit du mich aufnehmen kannst. /
+/ Nur du kannst mich retten. Bitte erhalte mich. /
+
+%: {::define_whitespace_handler('replace with ::nwh`)}
+
+/ here, ::execute intends to pass the phrase "hello world" to the given rule ... /
+%: execute(:rule:alnum_s) -> {
+    %: {{'::`}:rule(hello world)}
+}
+
+/ yet, at some other point in code, far, far, away... /
+
+%: {::use_whitespace_handler(remove all whitespace)} for {
+    %: id(:r:rest) -> {:r}
+    / it will pass the phrase "helloworld" :( /
+    %: {::execute(id)}
+}
